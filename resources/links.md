@@ -6,7 +6,7 @@
 
 ## Linear Congruential Skipping
 
-[Linear Congruential]([https://www.nayuki.io/page/fast-skipping-in-a-linear-congruential-generator)
+[Linear Congruential](https://www.nayuki.io/page/fast-skipping-in-a-linear-congruential-generator)
 
 ## PCG which support jumping
 
