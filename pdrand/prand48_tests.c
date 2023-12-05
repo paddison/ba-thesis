@@ -122,6 +122,23 @@ static char* test_pmrand_equals_mrand() {
     return 0;
 }
 
+static char* test_algorithm_c() {
+    uint64_t c = 1, g = 2, k = 10;
+    uint64_t result = __algorithm_c(c, g, k);
+    mu_assert("algorithm for evaluating sum is incorrect", 
+               result == 1023);
+
+    return 0;
+}
+
+static char* test_seek_intern_equals_seek_intern2() {
+    uint64_t r = 20017429951246, a = 25214903917, c = 11, n = 250000;
+    mu_assert("seek functions give different results",
+              __seek_intern(a, c, n, r) == __seek_intern2(a, c, n, r));
+
+    return 0;
+}
+
 static char* all_tests() {
     mu_run_test(test_IEEE754Double_range_0_to_1);
     mu_run_test(test_IEEE754Double_neg_2_375);
@@ -129,6 +146,8 @@ static char* all_tests() {
     mu_run_test(test_pdrand_equals_drand);
     mu_run_test(test_plrand_equals_lrand);
     mu_run_test(test_pmrand_equals_mrand);
+    mu_run_test(test_algorithm_c);
+    mu_run_test(test_seek_intern_equals_seek_intern2);
 
     return 0;
 }

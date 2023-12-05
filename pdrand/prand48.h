@@ -5,17 +5,18 @@
 #include <stdbool.h>
 
 /* Modulo is set to 2^48 */
-#define M 281474976710656
+#define WIDTH 48ull
+#define M (1ull << WIDTH)
 
 /* Default values for generator function */
-#define A_DEFAULT 0x5deece66d
-#define C_DEFAULT 0xb
+#define A_DEFAULT 0x5deece66dLL
+#define C_DEFAULT 0xbLL
 
 /**
  * @brief returns a new 48 bit number which is stored right to left in @a B.
  * @a B must be of type uint16_t[3]
  */
-#define SPLIT_BUF(B) ((uint64_t) B[2] << 32 | (uint32_t) B[1] << 16 | B[0])
+#define SPLIT_BUF(B) (((uint64_t) B[2] << 32) | ((uint32_t) B[1] << 16) | B[0])
 
 /** 
  * @brief writes the 48 lower bits of @a r into @B.
@@ -75,13 +76,13 @@ void prand48_init(void);
 /**
  * @brief Initialize the global state of the RNG with @a seed
  */
-void prand48_init_48(uint16_t seed[3]);
+void prand48_init48(uint16_t seed[3]);
 
 /**
  * @brief Initialize the global state. @a seed specifies the upper 
  * 32 bit of the seed. The lower 16 bit of the seed will always be 0x330e.
  */
-void prand48_init_32(uint32_t seed);
+void prand48_init32(uint32_t seed);
 
 /**
  * @brief Initialize the global state manually, setting the @a seed

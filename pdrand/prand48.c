@@ -87,6 +87,29 @@ static uint64_t __seek_intern(uint64_t a, uint64_t c, uint64_t n, uint64_t r) {
     return (a_pow_n_1 * inv * c + a_pow_n * r) % M;
 }
 
+/*
+ * Calculates c * sum_(i=0)to(k-1):(a^i)
+ */
+static uint64_t __algorithm_c(uint64_t c, uint64_t g, uint64_t n) {
+    uint64_t C = 0, f = c, h = g, i = (n + M) % M;
+    while (i > 0) {
+        if (i & 1) C = (C * h + f) % M;
+        f = (f * (h + 1)) % M;
+        h = (h * h) % M;
+        i = i / 2;
+    }
+
+    return C;
+}
+
+static uint64_t __seek_intern2(uint64_t a, uint64_t c, uint64_t n, uint64_t r) {
+    // g is a
+    // evaluate the first term
+    uint64_t first_term = (r * __powmod(a, n, M)) % M;
+    uint64_t second_term = __algorithm_c(c, a, n);
+    return (first_term + second_term) % M;
+}
+
 
 /*******************************
  * Header file implementations *
@@ -124,7 +147,7 @@ void prand48_init() {
     state.init = true;
 }
 
-void prand48_init_32(uint32_t seed) {
+void prand48_init32(uint32_t seed) {
     state.seed[0] = seed >> 16; 
     state.seed[1] = seed & 0xffff; 
     state.seed[2] = 0x330e; 
@@ -135,7 +158,7 @@ void prand48_init_32(uint32_t seed) {
     state.init = true;
 }
 
-void prand48_init_48(uint16_t seed[3]) {
+void prand48_init48(uint16_t seed[3]) {
     state.seed[0] = seed[0]; 
     state.seed[1] = seed[1]; 
     state.seed[2] = seed[2]; 
@@ -168,7 +191,7 @@ void prand48_seek(uint16_t buf[3], uint64_t n) {
     buf[2] = state.seed[2];
 
     uint64_t r = SPLIT_BUF(buf);
-    r = __seek_intern(state.a, state.c, n, r);
+    r = __seek_intern2(state.a, state.c, n, r);
 
     assert(r < ((uint64_t ) 1 << 48));
 
