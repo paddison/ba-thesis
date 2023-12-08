@@ -1,6 +1,11 @@
 #ifndef GRAY_H
 #define GRAY_H
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 
 /**
@@ -11,5 +16,9 @@
  * The return value is the pointer to the input array @param code.
  */
 uint16_t* gray_code(size_t W, uint16_t code[1 << W]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

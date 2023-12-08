@@ -1,6 +1,9 @@
 #ifndef C_POLY_H
 #define C_POLY_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <stdlib.h>
 
 typedef struct PolyGF2 PolyGF2;
@@ -25,10 +28,9 @@ typedef struct PolyGF2Decomp PolyGF2Decomp;
 struct PolyGF2Decomp {
     DecompParam* params; 
     size_t cap;
-    size_t m; // m is the length
+    size_t m;           // m is the length
     uint16_t hm1;
 };
-
 
 PolyGF2* poly_gf2_init(PolyGF2* p, size_t deg);
 
@@ -48,4 +50,7 @@ uint8_t poly_gf2_coeff(PolyGF2* p, size_t i);
  */
 PolyGF2Decomp poly_gf2_decomp(PolyGF2* p, uint16_t q);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

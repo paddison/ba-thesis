@@ -39,8 +39,8 @@ PolyGF2Decomp* poly_gf2_decomp_init(PolyGF2Decomp* pd, const PolyGF2* p, size_t 
     if (!p || !q) return 0;
     if (!pd) pd = (PolyGF2Decomp*) malloc(sizeof(PolyGF2Decomp));
 
-    pd->cap = p->deg > q ? p->deg / q : 2;
-    pd->params = (DecompParam*) malloc(sizeof(DecompParam) * pd->cap);
+    pd->cap = p->deg > q ? p->deg / q : 0;
+    pd->params = pd->cap ? (DecompParam*) malloc(sizeof(DecompParam) * pd->cap) : 0;
     pd->m = 0;
     pd->hm1 = 0;
 
@@ -66,11 +66,13 @@ PolyGF2Decomp poly_gf2_decomp(PolyGF2* p, uint16_t q) {
     size_t i = poly_gf2_deg(p);
     PolyGF2Decomp pd;
 
+
     poly_gf2_decomp_init(&pd, p, q);
+    if (!i) return pd; // empty polynomial
 
     while (!poly_gf2_coeff(p, i)) --i;
 
-    for (; i > q; --i) {
+    for (; i >= q; --i) {
         if (!poly_gf2_coeff(p, i)) continue;
         
         DecompParam dp = { 0 };
@@ -81,6 +83,8 @@ PolyGF2Decomp poly_gf2_decomp(PolyGF2* p, uint16_t q) {
             fprintf(stderr, "Unable to allocate space for new parameter");
         }
     }
+
+    if (i == SIZE_MAX) return pd;
 
     pd.hm1 = determine_gray_enumeration(i + 1, i + 1, p);
 
