@@ -15,7 +15,7 @@ struct StateRng64 {
     uint64_t s; 
 };
 
-StateRng64* state_rng_init(StateRng64* rng, void* seed);
+StateRng64* state_rng_init(StateRng64* rng);
 StateRng64* state_rng_copy(StateRng64* dest, const StateRng64* source);
 StateRng64* state_rng_add(StateRng64* lhs, const StateRng64* rhs);
 StateRng64* step(StateRng64* rng); 
