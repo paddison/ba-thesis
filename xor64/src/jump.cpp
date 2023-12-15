@@ -5,23 +5,28 @@
 
 #include "NTL/GF2X.h"
 
-#include "xor64_jump.hpp"
+#include "jump.hpp"
 #include "gray.hpp"
 #include "minpoly.h"
-#include "xor64_poly_decomp.hpp"
+#include "poly_decomp.hpp"
 
-#define Q_MAX 10
+
+const static Config DEFAULT_CFG = { .q = 4, .algorithm = SLIDING_WINDOW_DECOMP };
 
 /*------------------------------------------------------ 
  * Forward Declarations                                |
  /----------------------------------------------------*/
 
+// functions used for initialization
 static void init_jump_poly(NTL::GF2X& jump_poly, const NTL::GF2X& min_poly, const size_t jump_size);
 static void init_decomp_poly();
-static void init_sliding_window(size_t Q, Xor64RngGeneric h[Q], Xor64RngGeneric* rng);
-
 static NTL::GF2X load_min_poly();
 
+// verification
+static void verify_config(Config* cfg);
+
+// functions used for implementing the jump algorithm
+static void init_sliding_window(size_t Q, Xor64RngGeneric h[Q], Xor64RngGeneric* rng);
 static Xor64RngGeneric* horner(Xor64RngGeneric* rng, NTL::GF2X& jump_poly);
 static Xor64RngGeneric* precompute_A(size_t q, Xor64RngGeneric A[q + 1], const Xor64RngGeneric* rng);
 static Xor64RngGeneric* compute_decomposition_polys(size_t q, Xor64RngGeneric h[1 << q], Xor64RngGeneric A[q + 1]);
@@ -33,13 +38,20 @@ static Xor64RngGeneric* horner_sliding_window_decomp(Xor64RngGeneric* rng, const
  * Header Implementations                              |
  /----------------------------------------------------*/
 
-Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, Xor64RngGeneric* rng, size_t jump_size, Config* c) {
+Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, Xor64RngGeneric* rng, 
+                           size_t jump_size, Config* cfg) {
     // load the minimal polynomial from the header
     const NTL::GF2X min_poly = load_min_poly();
 
+    Config def = { .q = Q_DEFAULT, .algorithm = ALGORITHM_DEFAULT };
+
+    // verify config
+    if (!cfg) cfg = &def;
+    else verify_config(cfg);
+
     // initialize config values
-    jump_params->q = c->q;
-    jump_params->algorithm = c->algorithm;
+    jump_params->q = cfg->q;
+    jump_params->algorithm = cfg->algorithm;
 
     // initialize jump and decomposition polynomials
     init_jump_poly(jump_params->jump_poly, min_poly, jump_size);
@@ -72,14 +84,6 @@ void xor64_jump_destroy(Xor64Jump* jump_params) {
 /*------------------------------------------------------ 
  * Internal Implementations                            |
  /----------------------------------------------------*/
-
-static NTL::GF2X load_min_poly() {
-    NTL::GF2X min_poly;
-    for (size_t i = 0; MIN_POLY[i] != 0; ++i) {
-        NTL::SetCoeff(min_poly, i, MIN_POLY[i] == '1' ? 1 : 0);
-    }
-    return min_poly;
-}
 
 static void init_jump_poly(NTL::GF2X& jump_poly, const NTL::GF2X& min_poly, const size_t jump_size) {
     NTL::GF2X x(NTL::INIT_MONO, 1);
@@ -122,6 +126,21 @@ static void init_sliding_window(size_t Q, Xor64RngGeneric h[1 << Q], Xor64RngGen
     // polynomials in h always contain z^q, so 
     // each of the 2^q polynomials h contains A^j * x
     compute_decomposition_polys(Q, h, A);
+}
+
+static void verify_config(Config* cfg) {
+    if (cfg->q > Q_MAX || cfg->q == 0)  {
+        fprintf(stderr, "Invalid value for Q: %zu, defaulting to 4", cfg->q);
+        cfg->q = Q_DEFAULT;
+    }
+}
+
+static NTL::GF2X load_min_poly() {
+    NTL::GF2X min_poly;
+    for (size_t i = 0; MIN_POLY[i] != 0; ++i) {
+        NTL::SetCoeff(min_poly, i, MIN_POLY[i] == '1' ? 1 : 0);
+    }
+    return min_poly;
 }
 
 

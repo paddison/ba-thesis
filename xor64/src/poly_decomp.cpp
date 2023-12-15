@@ -1,4 +1,4 @@
-#include "xor64_poly_decomp.hpp"
+#include "poly_decomp.hpp"
 
 /* Forward Declarations */
 static Xor64PolyDecomp* xor64_poly_decomp_init(Xor64PolyDecomp* poly_decomp, size_t q, size_t deg);

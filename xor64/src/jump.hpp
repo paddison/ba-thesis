@@ -2,18 +2,18 @@
 #define XOR64_JUMP_H
 
 #include "NTL/GF2X.h"
+
 #ifdef __cplusplus 
-
-
-#include "xor64_poly_decomp.hpp"
 extern "C" {
-
 #endif
-#include <stdlib.h>
 
-#include "xor64_rng_generic.h"
+#include "poly_decomp.hpp"
+#include <stdlib.h>
+#include "rng_generic.h"
 
 #define Q_MAX 10
+#define Q_DEFAULT 4
+#define ALGORITHM_DEFAULT SLIDING_WINDOW_DECOMP
 
 /**
  * Which algorithm to use for jumping ahead in the random number stream
@@ -44,7 +44,8 @@ struct Config {
     size_t q;
 };
 
-Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, Xor64RngGeneric* rng, size_t jump_size, Config* c);
+Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, Xor64RngGeneric* rng, 
+        size_t jump_size, Config* c);
 Xor64RngGeneric* xor64_jump_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng);
 void xor64_jump_destroy(Xor64Jump* jump_params);
 

@@ -4,14 +4,9 @@
 
 #include "NTL/GF2X.h"
 
-#if defined(Xor64)
-    #include "xor64_rng_generic_64.h"
-#elif defined(XorMT)
-#else 
-    #include "xor64_rng_generic_64.h"
-#endif
+#include "rng_generic.h"
 
-#define F_NAME "minpoly.h"
+#define F_NAME "minpoly_out.h"
 
 /* Forward Declarations */
 static void xor64_init_min_poly(NTL::GF2X& p_min);

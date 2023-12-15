@@ -2,13 +2,13 @@
 #define PXORSHIFT_H
 
 #include <stdlib.h>
-#include "xor64_jump.hpp"
-#include "xor64_rng_generic.h"
-#include "xor64_rng_generic_64.h"
+#include "jump.hpp"
+#include "rng_generic.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 typedef struct Xor64 Xor64;
 
 struct Xor64 {
