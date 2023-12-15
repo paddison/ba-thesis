@@ -22,4 +22,6 @@
 
 [Xorshift1024* not commutative?](https://stackoverflow.com/questions/34574701/xorshift1024-jump-not-commutative?rq=3)
 
+## Blog Posts about PRNGS and Xorshift Skipping
 
+[Blog](https://www.codeproject.com/Articles/1239297/System-Random-and-Infinite-Monkey-Theorem)
