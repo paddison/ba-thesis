@@ -4,7 +4,7 @@
 
 #include "NTL/GF2X.h"
 
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 
 #define F_NAME "minpoly_out.h"
 
@@ -42,7 +42,6 @@ static char* xor64_minpoly_to_string(NTL::GF2X& p_min) {
 }
 
 int main(void) {
-    char* file_name = (char*) "minpoly.h"; 
     char* p_min_string;
     FILE* file;
     NTL::GF2X p_min;
@@ -53,7 +52,7 @@ int main(void) {
     p_min_len = NTL::deg(p_min) + 1;
     p_min_string = xor64_minpoly_to_string(p_min);
 
-    file = fopen((char*) file_name, "w");
+    file = fopen((char*) F_NAME, "w");
     fwrite("#define MIN_POLY \"", sizeof(char), 18, file);
 
     if (fwrite(p_min_string, sizeof(char), p_min_len, file) != p_min_len) {

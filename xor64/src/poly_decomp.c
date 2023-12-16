@@ -1,47 +1,50 @@
-#include "poly_decomp.hpp"
+#include "poly_decomp.h"
+#include "gray.h"
+
+#include <stdlib.h>
+#include <stdio.h>
 
 /* Forward Declarations */
-static Xor64PolyDecomp* xor64_poly_decomp_init(Xor64PolyDecomp* poly_decomp, size_t q, size_t deg);
+static Xor64PolyDecomp xor64_poly_decomp_init(size_t q, size_t deg);
 static int xor64_poly_decomp_add_param(Xor64PolyDecomp* poly_decomp, Xor64PolyDecompParam decomp_param); 
 
 /* Header Implementations */
-Xor64PolyDecomp* xor64_poly_decomp_init_from_gf2x(Xor64PolyDecomp* decomp_poly, const NTL::GF2X& jump_poly, const size_t Q) {
-    int i = NTL::deg(jump_poly);
+Xor64PolyDecomp xor64_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const size_t Q) {
+    int i = GF2X_deg(jump_poly);
 
-    xor64_poly_decomp_init(decomp_poly, Q, i);
+    Xor64PolyDecomp decomp_poly = xor64_poly_decomp_init(Q, i);
 
     for (; i >= (int) Q; --i) {
-        if (NTL::coeff(jump_poly, i) == 0) continue;
+        if (GF2X_coeff(jump_poly, i) == 0) continue;
         
         Xor64PolyDecompParam dp = { 0 };
         dp.h = determine_gray_enumeration(Q, i, jump_poly);
         dp.d = i - Q;
         i -= Q;
-        if (!xor64_poly_decomp_add_param(decomp_poly, dp)) {
+        if (!xor64_poly_decomp_add_param(&decomp_poly, dp)) {
             fprintf(stderr, "Unable to allocate space for new parameter");
         }
     }
 
-    decomp_poly->hm1 = determine_gray_enumeration(i + 1, i + 1, jump_poly);
+    decomp_poly.hm1 = determine_gray_enumeration(i + 1, i + 1, jump_poly);
 
     return decomp_poly;
 }
 
 void xor64_poly_decomp_destroy(Xor64PolyDecomp* decomp_poly) {
     free(decomp_poly->params);
-    *decomp_poly = { 0 };
+    decomp_poly->m = 0;
+    decomp_poly->params = 0;
+    decomp_poly->cap = 0;
+    decomp_poly->hm1 = 0;
 }
 
 /* Internal impolementations */
-static Xor64PolyDecomp* xor64_poly_decomp_init(Xor64PolyDecomp* poly_decomp, size_t q, size_t deg) {
-    if (q == 0 || poly_decomp == 0) return 0;
-
-    poly_decomp->cap = deg > q ? deg / q : 16;
-    poly_decomp->params = (Xor64PolyDecompParam *) realloc(poly_decomp->params, 
-            sizeof(Xor64PolyDecompParam) * poly_decomp->cap);
-
-    poly_decomp->m = 0;
-    poly_decomp->hm1 = 0;
+static Xor64PolyDecomp xor64_poly_decomp_init(size_t q, size_t deg) {
+    Xor64PolyDecomp poly_decomp = { 0 };
+    
+    poly_decomp.cap = deg > q ? deg / q : 16;
+    poly_decomp.params = (Xor64PolyDecompParam *) malloc(sizeof(Xor64PolyDecompParam) * poly_decomp.cap);
 
     return poly_decomp;
 }

@@ -1,13 +1,8 @@
 #ifndef GRAY_H
 #define GRAY_H
 
-#include "NTL/GF2X.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdlib.h>
+#include "gf2x_wrapper.h"
 
 /**
  * Computes the grey code enumeration (https://en.wikipedia.org/wiki/Gray_code)
@@ -18,11 +13,11 @@ extern "C" {
  */
 uint16_t* gray_code(size_t W, uint16_t code[1 << W]);
 
-inline size_t determine_gray_enumeration(const size_t q, const size_t i, const NTL::GF2X& poly) {
+static inline size_t determine_gray_enumeration(const size_t q, const size_t i, const GF2X* poly) {
     size_t gray_enumeration = 0;
 
     for (size_t j = 0; j < q; ++j) {
-        gray_enumeration = (gray_enumeration << 1) ^ NTL::rep(NTL::coeff(poly, i - j - 1));
+        gray_enumeration = (gray_enumeration << 1) ^ GF2X_coeff(poly, i - j - 1);
     }
     
     return gray_enumeration;
@@ -31,7 +26,7 @@ inline size_t determine_gray_enumeration(const size_t q, const size_t i, const N
 /**
  * Contains the first 1024 gray codes.
  */
-const uint16_t GRAY[1024] = {
+static const uint16_t GRAY[1024] = {
     0, 1, 3, 2,
     6, 7, 5, 4,
     12, 13, 15, 14,
@@ -289,9 +284,5 @@ const uint16_t GRAY[1024] = {
     516, 517, 519, 518,
     514, 515, 513, 512
 }; 
-
-#ifdef __cplusplus 
-}
-#endif
 
 #endif

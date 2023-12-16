@@ -1,9 +1,8 @@
 #ifndef PXOR64_POLY_H
 #define PXOR64_POLY_H
 
-#include <cstdlib>
-#include "NTL/GF2X.h"
-#include "gray.hpp"
+#include <stdlib.h>
+#include "gf2x_wrapper.h"
 
 typedef struct Xor64PolyDecompParam Xor64PolyDecompParam;
 
@@ -26,7 +25,7 @@ struct Xor64PolyDecomp {
  *
  * @param decomp_poly can not be 0
  */
-Xor64PolyDecomp* xor64_poly_decomp_init_from_gf2x(Xor64PolyDecomp* decomp_poly, const NTL::GF2X& jump_poly, const size_t Q);
+Xor64PolyDecomp xor64_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const size_t Q);
 
 /**
  * Destroys @param decomp_poly, freeing any space allocated. 

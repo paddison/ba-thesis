@@ -2,12 +2,11 @@
 #define PXORSHIFT_H
 
 #include <stdlib.h>
-#include "jump.hpp"
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
+#include "config.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Opaque pointer definition to hide implementation details */
+typedef struct Xor64Jump Xor64Jump;
 
 typedef struct Xor64 Xor64;
 
@@ -40,20 +39,24 @@ struct Xor64 {
  * jump_algorithm = SLIDING_WINDOW_DECOMP
  * q = 3
  */
-Xor64* xor64_init(Xor64* xor64);
+Xor64 xor64_init();
 
 /**
  * Initialize the state Random number generator with @param seed.
  * If @param xor_64 is 0, it will be allocated on the heap and returned to the caller.
  *
  */
-Xor64* xor64_init_seed(Xor64* xor64, const uint64_t seed);
+Xor64 xor64_init_seed(const uint64_t seed);
 
 /**
  * Initialize the jump polynomial for the random number generator to a jump size of 
  * @param jump_size. Can only be called after pxor64_init or pxor64_init_seed.
  *
+ * This can also be used to change the jump size later, but ONLY after a call to 
+ * xor64_clear_jump.
+ *
  * Optionally @param cfg can be used to configure the application. 
+ *
  *
  * @param cfg is a struct containing two fields: 
  * -jump_algorithm: enum JumpAlgorithm
@@ -72,7 +75,7 @@ Xor64* xor64_init_seed(Xor64* xor64, const uint64_t seed);
  * jump_algorithm = SLIDING_WINDOW_DECOMP
  * q = 3
  */
-void xor64_prepare_jump(Xor64* xor64, const size_t jump_size, Config* cfg);
+void xor64_prepare_jump(Xor64* xor64, const size_t jump_size, Xor64Config* cfg);
 
 /**
  * Jump forward in the stream by @param jump steps.
@@ -81,11 +84,21 @@ void xor64_prepare_jump(Xor64* xor64, const size_t jump_size, Config* cfg);
 void xor64_jump(Xor64* xor64);
 
 /**
+ * Clear the parameters for jumping ahead, freeing any space used by them. 
+ * Only allowed to be called after xor64_prepare_jump.
+ *
+ * There are two scenarios when a user might call this function:
+ * 1. When changing the jump size, before a new call to xor64_prepare_jump.
+ * 2. When cleaning up the application, in order to avoid leaks.
+ */
+void xor64_clear_jump(Xor64* xor64);
+
+/**
  * Generates the next unsigned 64 bit number in the stream.
  * '
  * Can only be used after a call to xor64_init()
  */ 
-inline uint64_t xor64_next_unsigned(Xor64* xor64) {
+static inline uint64_t xor64_next_unsigned(Xor64* xor64) {
     return xor64_rng_generic_gen64(&xor64->rng);
 }
 
@@ -94,7 +107,7 @@ inline uint64_t xor64_next_unsigned(Xor64* xor64) {
  * '
  * Can only be used after a call to xor64_init()
  */ 
-inline int64_t xor64_next_signed(Xor64* xor64) {
+static inline int64_t xor64_next_signed(Xor64* xor64) {
     return (int64_t) xor64_rng_generic_gen64(&xor64->rng);
 }
 
@@ -104,13 +117,9 @@ inline int64_t xor64_next_signed(Xor64* xor64) {
  * '
  * Can only be used after a call to xor64_init()
  */ 
-inline double xor64_next_double(Xor64* xor64) {
+static inline double xor64_next_double(Xor64* xor64) {
     uint64_t num = xor64_rng_generic_gen64(&xor64->rng);
     return (num >> 11) * (1.0/9007199254740992.0);
 }
-
-#ifdef __plusplus
-}
-#endif
 
 #endif

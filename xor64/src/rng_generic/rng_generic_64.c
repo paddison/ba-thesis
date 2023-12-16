@@ -10,25 +10,25 @@ Xor64RngGeneric* xor64_rng_generic_init(Xor64RngGeneric* rng) {
 }
 
 
-inline Xor64RngGeneric* xor64_rng_generic_copy(Xor64RngGeneric *dest, 
+Xor64RngGeneric* xor64_rng_generic_copy(Xor64RngGeneric *dest, 
         const Xor64RngGeneric *source) {
     dest->state = source->state;
     return dest;
 }
 
-inline Xor64RngGeneric* xor64_rng_generic_add(Xor64RngGeneric* lhs, 
+Xor64RngGeneric* xor64_rng_generic_add(Xor64RngGeneric* lhs, 
         const Xor64RngGeneric* rhs) {
     lhs->state ^= rhs->state;
     return lhs;
 }
 
-inline void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
+void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
     rng->state ^= (rng->state << a);
     rng->state ^= (rng->state >> b);
     rng->state ^= (rng->state << c);
 }
 
-inline uint64_t xor64_rng_generic_gen64(Xor64RngGeneric* rng) {
+uint64_t xor64_rng_generic_gen64(Xor64RngGeneric* rng) {
     xor64_rng_generic_next_state(rng);
     return rng->state;
 }

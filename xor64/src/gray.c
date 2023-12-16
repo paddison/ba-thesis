@@ -1,4 +1,4 @@
-#include "gray.hpp"
+#include "gray.h"
 
 uint16_t* gray_code(size_t W, uint16_t code[1 << W]) {
     // the implementation is taken from

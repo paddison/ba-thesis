@@ -1,8 +1,7 @@
-
 #include <stdio.h>
-#include "../minunit.h"
-#include "../xor64_jump.hpp"
-#include "../xor64_rng_generic_64.h"
+#include "minunit.h"
+#include "../src/jump.hpp"
+#include "../src/rng_generic/rng_generic.h"
 
 #define SEED 362436000ull
 
