@@ -2,10 +2,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "gf2x_wrapper.h"
-#include "jump.h"
 #include "gray.h"
-#include "minpoly_out.h"
+#include "jump.h"
+#include "gf2x_wrapper.h"
 #include "rng_generic/rng_generic.h"
 #include "poly_decomp.h"
 

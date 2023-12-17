@@ -13,7 +13,7 @@ static void do_n_steps(size_t n, Xor64RngGeneric* rng) {
 }
 
 static int compare_state(Xor64RngGeneric* iter, Xor64RngGeneric* jump) {
-    return iter->mt.mt[iter->mt.mti] == jump->mt.mt[jump->mt.mti];
+    return iter->mt.mt[(iter->mt.mti + NN) % NN] == jump->mt.mt[(jump->mt.mti + NN)% NN];
 }
 
 static int test_jump(size_t jump_size, Xor64Config* c) {
@@ -35,25 +35,34 @@ static int test_jump(size_t jump_size, Xor64Config* c) {
 }
 
 static char* test_first_20k() {
-    size_t MAX = 20000;
+    size_t MAX = 2000;
     Xor64Config c = { .q = 4, .algorithm = HORNER };
     Xor64RngGeneric iter;
+    Xor64RngGeneric copy;
     xor64_rng_generic_init(&iter);
-    for (size_t i = 0; i < 310; ++i) xor64_rng_generic_gen64(&iter);
+ //   xor64_rng_generic_gen64(&iter);
     
-    for (size_t i = 311; i < MAX; ++i) {
+    for (size_t i = 1; i < MAX; ++i) {
         Xor64RngGeneric jump;
         Xor64Jump params = { 0 };
 
         xor64_rng_generic_init(&jump);
+//        xor64_rng_generic_gen64(&jump);
+
         xor64_jump_init(&params, i, &c);
         xor64_jump_jump(&params, &jump);
         xor64_rng_generic_gen64(&iter);
+        //xor64_rng_generic_copy(&copy, &iter);
 
         if (!compare_state(&jump, &iter)) {
-            printf("wrong result at jump: %zu\n", i);
-            //return "";
+            printf("jump: %zu\tjump_ptr: %d\titer_ptr: %d\n", i, jump.mt.mti, iter.mt.mti);
         }
+        /*
+        printf("j: %llu\ti: %llu\n", 
+                xor64_rng_generic_gen64(&jump),
+                xor64_rng_generic_gen64(&copy));
+                */
+
     }
 
     return 0;

@@ -5,6 +5,12 @@
 
 #include "config.h"
 
+#if defined(Xor64MT)
+#include "minpoly_mt.h"
+#else
+#include "minpoly_64.h"
+#endif
+
 typedef struct Xor64Jump Xor64Jump;
 typedef struct Xor64RngGeneric Xor64RngGeneric;
 typedef struct GF2X GF2X;

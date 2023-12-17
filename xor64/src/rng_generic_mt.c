@@ -1,7 +1,7 @@
 #define XorMT
-#include "rng_generic.h"
 #include <string.h>
 #include <stdio.h>
+#include "rng_generic/rng_generic.h"
 
 #define SEED 1234567
 
@@ -78,7 +78,7 @@ void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
       state[num] = state[num+(MM-NN)] ^ (y >> 1) ^ mag02[y & 1UL];
       rng->mt.mti++;
   }
-  else {//if (num == NN-1){
+  else if (num == NN-1){
       y = (state[NN-1] & UM) | (state[0] & LM);
       state[NN-1] = state[MM-1] ^ (y >> 1) ^ mag02[y % 1UL];
       rng->mt.mti = 0;

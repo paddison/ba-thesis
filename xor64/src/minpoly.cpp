@@ -6,7 +6,7 @@
 
 #include "rng_generic/rng_generic.h"
 
-#define F_NAME "./src/minpoly_out.h"
+#define F_NAME "../include/minpoly_out.h"
 
 /* Forward Declarations */
 static void xor64_init_min_poly(NTL::GF2X& p_min);
@@ -46,14 +46,20 @@ int main(void) {
     FILE* file;
     NTL::GF2X p_min;
     size_t p_min_len;
+        printf("unable to open file");
 
     /* initialize minimal polynomial and write it to string */
+    printf("%s\n", F_NAME);
     xor64_init_min_poly(p_min);
     p_min_len = NTL::deg(p_min) + 1;
-    std::cout << p_min << std::endl;
+    //std::cout << p_min << std::endl;
     p_min_string = xor64_minpoly_to_string(p_min);
 
     file = fopen((char*) F_NAME, "w");
+    if (!file) {
+        printf("unable to open file");
+        return EXIT_FAILURE;
+    }
 #if defined(XorMT)
     fwrite("//MT Poly\n", sizeof(char), 10, file);
 #else

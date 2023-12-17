@@ -64,6 +64,7 @@ void mt_init_genrand64(MT* mt, uint64_t seed) {
     mt->mt[0] = seed;
     for (mt->mti = 1; mt->mti < NN; mt->mti++) 
         state[mt->mti] =  (6364136223846793005ULL * (state[mt->mti-1] ^ (state[mt->mti-1] >> 62)) + mt->mti);
+    mt->mti = 0;
 }
 
 /* generates a random number on [0, 2^64-1]-interval */
@@ -73,6 +74,9 @@ uint64_t mt_genrand64_int64(MT* mt)
     uint64_t x;
     static uint64_t mag01[2]={0ULL, MATRIX_A};
     uint64_t* state = (uint64_t*) &mt->mt[0];
+
+  
+    uint64_t ret = state[mt->mti++];
 
     if (mt->mti >= NN) { /* generate NN words at one time */
 
@@ -92,13 +96,11 @@ uint64_t mt_genrand64_int64(MT* mt)
 
         mt->mti = 0;
     }
-  
-    x = state[mt->mti++];
 
-    x ^= (x >> 29) & 0x5555555555555555ULL;
-    x ^= (x << 17) & 0x71D67FFFEDA60000ULL;
-    x ^= (x << 37) & 0xFFF7EEE000000000ULL;
-    x ^= (x >> 43);
+    ret ^= (ret >> 29) & 0x5555555555555555ULL;
+    ret ^= (ret << 17) & 0x71D67FFFEDA60000ULL;
+    ret ^= (ret << 37) & 0xFFF7EEE000000000ULL;
+    ret ^= (ret >> 43);
 
     return x;
 }

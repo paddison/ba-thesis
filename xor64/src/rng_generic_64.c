@@ -1,4 +1,4 @@
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 
 const static uint64_t a = 13;
 const static uint64_t b = 17;

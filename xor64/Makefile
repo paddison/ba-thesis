@@ -1,71 +1,41 @@
-# ----------------------
-#  Variable Definitions
-# ----------------------
+CXXFLAGS = -std=c++11 -I ./include
+CFLAGS = -I ./include
+ntl_flags = -lntl -lgmp -lgf2x
 
-CC := clang
-CXX := clang++
-CXXFLAGS := -g --std=c++11
-CFLAGS := -g
-NTL_FLAGS := -lntl -lgf2x -lgmp
-OBJECT_FILES := $(patsubst %.c, %.o, $(wildcard src/*.c))
-FILTERED := $(filter-out %jump.o, $(OBJECT_FILES)) # don't build jump.o with implicit rule
-# default rng
-#RNG := rng_generic_64.o
-# prerequisites for building the application, without any rngs.
-PREREQS := jump.o $(FILTERED) gf2x_wrapper.o 
+vpath %.c src:src/rng_generic:lib/mt
+vpath %.cpp src
+vpath %.o build
 
-# -------------------------------
-#  Directories with source files 
-# ------------------------------- 
-
-vpath %.c ./src:./src/rng_generic:./lib/mt:./test
-vpath %.cpp ./src
-vpath %.h ./src
-
-# ---------
-#  Targets 
-# ---------
-
-# default target, builds with basic xorshift generator
-rng64: RNG := rng_generic_64.o
-rng64: $(PREREQS) rng_generic_64.o
-	echo $(PREREQS)
-	clang++ $(CXXFLAGS) $^ -o out/$@ $(NTL_FLAGS)
-
-# building with Mersenne Twister as Rng
-rngmt: CFLAGS += -DXorMT
-rngmt: CXXFLAGS += -DXorMT
-rngmt: RNG := rng_generic_mt.o mt.o
-rngmt: rng_generic_mt.o mt.o $(PREREQS) 
-	clang++ $(CXXFLAGS) $^ -o $@ $(NTL_FLAGS)
+sources := $(wildcard src/*.c)
+objects := $(patsubst src/%.c, build/%.o, $(sources))
+minpoly := build/minpoly.o
 
 
-# testing
-t_first_n: CFLAGS += -DXorMT
-t_first_n: CXXFLAGS += -DXorMT
-t_first_n: RNG := rng_generic_mt.o mt.o
-t_first_n: mt.o rng_generic_mt.o jump.o t_first_n_mt.o poly_decomp.o gf2x_wrapper.o
-	clang++ $(CXXFLAGS) $^ -o $@ $(NTL_FLAGS)
+
+all:
+	echo $(filter %rng_generic_64.o,$(objects))
+
+rng64: jump64.o gf2x_wrapper.o xor64.o poly_decomp.o rng_generic_64.o
+
+jumpmt.o: minpolymt
+minpolymt: $(minpoly) $(filter %rng_generic_mt.o, $(objects)) build/mt.o
+	echo "hello"
+
+jump64.o: minpoly64
+minpoly64: $(minpoly) $(filter %rng_generic_64.o,$(objects))
+	$(CXX) $^ -o $@ $(ntl_flags)
 
 
-# in order to build jump.o, the minimal polynomial of the transition function 
-# has to be calculated. Since this is expensive, it is done on compile time
-jump.o: minpoly_out.h 
+build/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-minpoly_out.h: minpoly
+build/%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# builds the cpp file which calculates the minimal polynomial, creating the 
-# header which contains it in form of a string
-# the header is included in jump.c
-minpoly: $(RNG) minpoly.o 
-	echo $(RNG)
-	echo "calculating minimal polynomial"
-	clang++ $(CXXFLAGS) $^ $(RNG) -o ./src/$@ $(NTL_FLAGS)
-	./src/$@
-	rm ./src/$@
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o build/$@
 
 .PHONY: clean
 clean:
-	rm *.o
-	rm */*.o
-	rm src/minpoly_out.h
+	rm build/*.o
+
