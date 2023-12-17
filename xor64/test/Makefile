@@ -7,38 +7,21 @@ CXX := clang++
 CXXFLAGS := -g --std=c++11
 CFLAGS := -g
 NTL_FLAGS := -lntl -lgf2x -lgmp
-OBJECT_FILES := $(patsubst %.c, %.o, $(wildcard src/*.c))
-FILTERED := $(filter-out %jump.o, $(OBJECT_FILES)) # don't build jump.o with implicit rule
 # default rng
 #RNG := rng_generic_64.o
 # prerequisites for building the application, without any rngs.
-PREREQS := jump.o $(FILTERED) gf2x_wrapper.o 
 
 # -------------------------------
 #  Directories with source files 
 # ------------------------------- 
 
-vpath %.c ./src:./src/rng_generic:./lib/mt:./test
-vpath %.cpp ./src
-vpath %.h ./src
+vpath %.c ../src:../src/rng_generic:../lib/mt
+vpath %.cpp ../src
+vpath %.h ../src
 
 # ---------
 #  Targets 
 # ---------
-
-# default target, builds with basic xorshift generator
-rng64: RNG := rng_generic_64.o
-rng64: $(PREREQS) rng_generic_64.o
-	echo $(PREREQS)
-	clang++ $(CXXFLAGS) $^ -o out/$@ $(NTL_FLAGS)
-
-# building with Mersenne Twister as Rng
-rngmt: CFLAGS += -DXorMT
-rngmt: CXXFLAGS += -DXorMT
-rngmt: RNG := rng_generic_mt.o mt.o
-rngmt: rng_generic_mt.o mt.o $(PREREQS) 
-	clang++ $(CXXFLAGS) $^ -o $@ $(NTL_FLAGS)
-
 
 # testing
 t_first_n: CFLAGS += -DXorMT
@@ -66,6 +49,5 @@ minpoly: $(RNG) minpoly.o
 
 .PHONY: clean
 clean:
-	rm *.o
-	rm */*.o
-	rm src/minpoly_out.h
+	rm ../**/*.o
+	rm ../src/minpoly_out.h

@@ -5,11 +5,13 @@
 extern "C" {
 #endif
 
-#include "../lib/mt/mt.h"
+#include "../../lib/mt/mt.h"
 
-#define STATE_SIZE 19937
+#define XOR64_RNG_STATE_SIZE 19937
 
-struct RngGeneric {
+typedef struct Xor64RngGeneric Xor64RngGeneric;
+
+struct Xor64RngGeneric {
     MT mt;
 };
 

@@ -1,21 +1,22 @@
+#define XorMT
 #include "rng_generic.h"
 #include <string.h>
 #include <stdio.h>
 
 #define SEED 1234567
 
-Xor64RngGeneric* rng_generic_init(Xor64RngGeneric* rng) {
+Xor64RngGeneric* xor64_rng_generic_init(Xor64RngGeneric* rng) {
     mt_init_genrand64(&rng->mt, SEED);
     return rng;
 }
 
-Xor64RngGeneric* rng_generic_copy(Xor64RngGeneric* dest, const Xor64RngGeneric* source) {
+Xor64RngGeneric* xor64_rng_generic_copy(Xor64RngGeneric* dest, const Xor64RngGeneric* source) {
     memcpy(dest->mt.mt, source->mt.mt, sizeof(uint64_t) * NN) ;
     dest->mt.mti = source->mt.mti;
     return dest;
 }
 
-Xor64RngGeneric* rng_generic_add(Xor64RngGeneric* lhs, const Xor64RngGeneric* rhs) {
+Xor64RngGeneric* xor64_rng_generic_add(Xor64RngGeneric* lhs, const Xor64RngGeneric* rhs) {
     // mersenne twister's state stores a pointer to 32 bit words in its
     // internal state. this means the states of lhs and rhs might be at 
     // different points in the rotation. when adding the states, we need 
@@ -56,11 +57,11 @@ Xor64RngGeneric* rng_generic_add(Xor64RngGeneric* lhs, const Xor64RngGeneric* rh
     return lhs;
 }
 
-uint64_t rng_generic_step(Xor64RngGeneric* rng) {
+uint64_t xor64_rng_generic_gen64(Xor64RngGeneric* rng) {
     return mt_genrand64_int64(&rng->mt);
 }
 
-void rng_generic_next_state(Xor64RngGeneric* rng) {
+void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
   int num;
   uint64_t y;
   static uint64_t mag02[2]={0x0ul, MATRIX_A};
@@ -84,7 +85,7 @@ void rng_generic_next_state(Xor64RngGeneric* rng) {
   }
 }
 
-Xor64RngGeneric* rng_generic_seed(Xor64RngGeneric* rng, void* seed) {
+Xor64RngGeneric* xor64_rng_generic_seed(Xor64RngGeneric* rng, uint64_t seed) {
     mt_init_genrand64(&rng->mt, *(uint64_t*) seed);
 
     return rng;

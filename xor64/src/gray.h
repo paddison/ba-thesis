@@ -4,15 +4,6 @@
 #include <stdlib.h>
 #include "gf2x_wrapper.h"
 
-/**
- * Computes the grey code enumeration (https://en.wikipedia.org/wiki/Gray_code)
- * of a @param W bits wide number.
- * The array @param code to store the enumerated values has to be of size 2^W.
- * 
- * The return value is the pointer to the input array @param code.
- */
-uint16_t* gray_code(size_t W, uint16_t code[1 << W]);
-
 static inline size_t determine_gray_enumeration(const size_t q, const size_t i, const GF2X* poly) {
     size_t gray_enumeration = 0;
 

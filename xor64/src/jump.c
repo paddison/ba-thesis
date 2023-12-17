@@ -6,7 +6,8 @@
 #include "jump.h"
 #include "gray.h"
 #include "minpoly_out.h"
-
+#include "rng_generic/rng_generic.h"
+#include "poly_decomp.h"
 
 /*------------------------------------------------------ 
  * Forward Declarations                                |
@@ -21,12 +22,12 @@ static GF2X* load_min_poly();
 static void verify_config(Xor64Config* cfg);
 
 // functions used for implementing the jump algorithm
-static void init_sliding_window(size_t Q, Xor64RngGeneric h[Q], Xor64RngGeneric* rng);
+static void init_sliding_window(size_t Q, Xor64RngGeneric* h, Xor64RngGeneric* rng);
 static Xor64RngGeneric* horner(Xor64RngGeneric* rng, GF2X* jump_poly);
 static Xor64RngGeneric* precompute_A(size_t q, Xor64RngGeneric A[q + 1], const Xor64RngGeneric* rng);
 static Xor64RngGeneric* compute_decomposition_polys(size_t q, Xor64RngGeneric h[1 << q], Xor64RngGeneric A[q + 1]);
-static Xor64RngGeneric* horner_sliding_window(const size_t q, Xor64RngGeneric* rng, const GF2X* jump_poly, Xor64RngGeneric h[q]);
-static Xor64RngGeneric* horner_sliding_window_decomp(Xor64RngGeneric* rng, const Xor64PolyDecomp* jump_poly, Xor64RngGeneric h[]);
+static Xor64RngGeneric* horner_sliding_window(const size_t q, Xor64RngGeneric* rng, const GF2X* jump_poly, Xor64RngGeneric* h);
+static Xor64RngGeneric* horner_sliding_window_decomp(Xor64RngGeneric* rng, const Xor64PolyDecomp* jump_poly, const Xor64RngGeneric* h);
 
 
 /*------------------------------------------------------ 
@@ -49,6 +50,7 @@ Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, size_t jump_size, Xor64Config
     jump_params->q = cfg->q;
     jump_params->algorithm = cfg->algorithm;
     jump_params->jump_poly = init_jump_poly(min_poly, jump_size);
+    jump_params->h = malloc(sizeof(Xor64RngGeneric) * (1 << jump_params->q));
 
     // initialize jump and decomposition polynomials
     jump_params->decomp_poly = xor64_poly_decomp_init_from_gf2x(jump_params->jump_poly, jump_params->q);
@@ -69,14 +71,16 @@ Xor64RngGeneric* xor64_jump_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng) {
                                      jump_params->h); 
     } else { 
         return horner_sliding_window_decomp(rng, 
-                                            &jump_params->decomp_poly, 
+                                            jump_params->decomp_poly, 
                                             jump_params->h);
     }
 }
 
 void xor64_jump_destroy(Xor64Jump* jump_params) {
     GF2X_zero_destroy(jump_params->jump_poly);
-    xor64_poly_decomp_destroy(&jump_params->decomp_poly);
+    xor64_poly_decomp_destroy(jump_params->decomp_poly);
+    free(jump_params->h);
+    free(jump_params->decomp_poly);
 }
 
 /*------------------------------------------------------ 
@@ -124,7 +128,6 @@ static void init_sliding_window(size_t Q, Xor64RngGeneric h[1 << Q], Xor64RngGen
     // precompute A^j * x 
     precompute_A(Q, A, rng);
 
-    // do all the rest
     // polynomials in h always contain z^q, so 
     // each of the 2^q polynomials h contains A^j * x
     compute_decomposition_polys(Q, h, A);
@@ -160,7 +163,7 @@ static Xor64RngGeneric* precompute_A(size_t Q, Xor64RngGeneric A[Q + 1], const X
     return A;
 }
 
-static Xor64RngGeneric* compute_decomposition_polys(size_t Q, Xor64RngGeneric h[1 << Q], 
+static Xor64RngGeneric* compute_decomposition_polys(size_t Q, Xor64RngGeneric* h, 
                                       Xor64RngGeneric A[Q + 1]) {
     // A[Q] is the polynomial component which contains z^q,
     // which is always included, and thus used to initialize
@@ -184,7 +187,7 @@ static Xor64RngGeneric* compute_decomposition_polys(size_t Q, Xor64RngGeneric h[
     return h;
 }
 
-static Xor64RngGeneric* horner_sliding_window(size_t Q, Xor64RngGeneric* rng, const GF2X* jump_poly, Xor64RngGeneric h[Q]) {
+static Xor64RngGeneric* horner_sliding_window(size_t Q, Xor64RngGeneric* rng, const GF2X* jump_poly, Xor64RngGeneric* h) {
     // use horners method with sliding window
     Xor64RngGeneric tmp = { 0 };
     int i = GF2X_deg(jump_poly); 
@@ -231,7 +234,7 @@ static Xor64RngGeneric* horner_sliding_window(size_t Q, Xor64RngGeneric* rng, co
     return rng;
 }
 
-static Xor64RngGeneric* horner_sliding_window_decomp(Xor64RngGeneric* rng, const Xor64PolyDecomp* decomp_poly, Xor64RngGeneric h[]) {
+static Xor64RngGeneric* horner_sliding_window_decomp(Xor64RngGeneric* rng, const Xor64PolyDecomp* decomp_poly, const Xor64RngGeneric* h) {
     Xor64RngGeneric tmp = { 0 };
 
     // go to first non zero coefficient

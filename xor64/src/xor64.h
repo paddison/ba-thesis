@@ -2,16 +2,16 @@
 #define PXORSHIFT_H
 
 #include <stdlib.h>
-#include "rng_generic/rng_generic.h"
 #include "config.h"
 
-/* Opaque pointer definition to hide implementation details */
+/* Opaque pointer definitions to hide implementation details */
 typedef struct Xor64Jump Xor64Jump;
+typedef struct Xor64RngGeneric Xor64RngGeneric;
 
 typedef struct Xor64 Xor64;
 
 struct Xor64 {
-    Xor64RngGeneric rng;
+    Xor64RngGeneric* rng;
     Xor64Jump* jump;
 };
 
@@ -94,22 +94,22 @@ void xor64_jump(Xor64* xor64);
 void xor64_clear_jump(Xor64* xor64);
 
 /**
+ * Destroys the random number generator, freeing all memory used by it.
+ */
+void xor64_destroy(Xor64 *xor64);
+/**
  * Generates the next unsigned 64 bit number in the stream.
  * '
  * Can only be used after a call to xor64_init()
  */ 
-static inline uint64_t xor64_next_unsigned(Xor64* xor64) {
-    return xor64_rng_generic_gen64(&xor64->rng);
-}
+uint64_t xor64_next_unsigned(Xor64* xor64);
 
 /**
  * Generates the next signed 64 bit number in the stream.
  * '
  * Can only be used after a call to xor64_init()
  */ 
-static inline int64_t xor64_next_signed(Xor64* xor64) {
-    return (int64_t) xor64_rng_generic_gen64(&xor64->rng);
-}
+int64_t xor64_next_signed(Xor64* xor64);
 
 /**
  * Generates the next real number in the stream. The number will be in the range of
@@ -117,9 +117,6 @@ static inline int64_t xor64_next_signed(Xor64* xor64) {
  * '
  * Can only be used after a call to xor64_init()
  */ 
-static inline double xor64_next_double(Xor64* xor64) {
-    uint64_t num = xor64_rng_generic_gen64(&xor64->rng);
-    return (num >> 11) * (1.0/9007199254740992.0);
-}
+double xor64_next_double(Xor64* xor64);
 
 #endif

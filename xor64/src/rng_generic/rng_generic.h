@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 #include <stdlib.h>
-
 #include "rng_generic_generators.h"
 
 /**

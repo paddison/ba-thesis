@@ -25,7 +25,7 @@ struct Xor64PolyDecomp {
  *
  * @param decomp_poly can not be 0
  */
-Xor64PolyDecomp xor64_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const size_t Q);
+Xor64PolyDecomp* xor64_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const size_t Q);
 
 /**
  * Destroys @param decomp_poly, freeing any space allocated. 

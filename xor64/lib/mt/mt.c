@@ -64,7 +64,6 @@ void mt_init_genrand64(MT* mt, uint64_t seed) {
     mt->mt[0] = seed;
     for (mt->mti = 1; mt->mti < NN; mt->mti++) 
         state[mt->mti] =  (6364136223846793005ULL * (state[mt->mti-1] ^ (state[mt->mti-1] >> 62)) + mt->mti);
-    mt->mti = 0;
 }
 
 /* generates a random number on [0, 2^64-1]-interval */
