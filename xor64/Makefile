@@ -7,55 +7,111 @@ build := build
 out := bin
 inc := include
 
-sources := $(wildcard $(src)/*.c*)
-objects := $(patsubst $(src)/%.c, $(build)/%.o, $(sources))
-objects := $(patsubst $(src)/%.cpp, $(build)/%.o, $(objects))
+# object files needed for running the algorithm etc.
+sources := gf2x_wrapper.cpp jump.c poly_decomp.c xor64.c
+objects := $(patsubst %.c, $(build)/%.o, $(sources))
+objects := $(patsubst %.cpp, $(build)/%.o, $(objects))
 
-vpath %.c src:lib/mt:test
+# object files for using normal xorshift rng
+rng64 := rng_generic_64.c
+rng64_obj := $(patsubst %.c, $(build)/%.o, $(rng64)) 
+
+# object files for using tiny mersenne twister
+rngtinymt := rng_generic_tinymt.c tinymt.c
+rngtinymt_obj := $(patsubst %.c, $(build)/%.o, $(rngtinymt)) 
+
+# object files for using mersenne twiser
+rngmt := rng_generic_mt.c mt.c
+rngmt_obj   := $(patsubst %.c, $(build)/%.o, $(rngmt))
+
+# this tells make where all the source files, headers etc. are
+vpath %.c src:src/lib/mt:src/lib/tinymt:test
 vpath %.cpp src
 vpath %.o build
 vpath %.h include src
 
-all: headers rng64 rngmt
+all: 
+	echo $(rngtinymt_obj)
+	echo $(rngmt_obj)
+	echo $(objects)
 
-rng64: $(filter-out %minpoly.o %mt.o, $(objects))
+
+# =====================================================================================
+# Targets for building the library, one for each random number generator
+# =====================================================================================
+
+rng64: $(objects) $(rng64) 
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
-rngmt: $(filter-out %minpoly.o %rng_generic_64.o, $(objects)) $(build)/mt.o
+rngmt: $(objects) $(rngmt) 
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+rngtinymt: $(objects) $(rngtinymt)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+
+# =====================================================================================
+# Building the tests for the application
+# =====================================================================================
 
 test: CXXFLAGS += -DTEST
 test: CFLAGS += -DTEST
-test: headers t_rng_generic_64
+test: t_rng_first_n_tinymt t_rng_first_n_mt t_rng_first_n_64
 	echo "test"
 
-t_rng_generic_64: $(build)/t_rng_generic_64.o $(filter %poly_decomp.o %gf2x_wrapper.o %jump.o %rng_generic_64.o, $(objects))
+t_rng_first_n_64: $(rng64_obj) $(objects) $(build)/t_first_n_mt.o
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_rng_first_n_tinymt: $(rngtinymt_obj) $(objects) $(build)/t_first_n_mt.o
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_rng_first_n_mt: $(rngmt_obj) $(objects) $(build)/t_first_n_mt.o
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+
+# =====================================================================================
+# Building header files which contain the minimal polynomial of each respective rng
+# =====================================================================================
 
 headers: CXXFLAGS += -DCALC_MIN_POLY
 headers: CFLAGS += -DCALC_MIN_POLY
-headers: minpolymt.h minpoly64.h
+headers: minpolymt.h minpoly64.h minpolytinymt.h
 
 minpolymt.h: minpolymt 
 minpoly64.h: minpoly64
+minpolytinymt.h: minpolytinymt
 
-minpolymt: $(build)/mt.o
-	$(CXX) $(CXXFLAGS) $^ $(src)/minpoly.cpp $(src)/rng_generic_mt.c -o $@ $(ntl_flags)
+define build_header
+	$(CXX) $(CXXFLAGS) $^ $(src)/minpoly.cpp -o $@ $(ntl_flags)
 	./$@
 	mv minpoly.h $(src)/$@.h
 	rm $@ 
+endef
 
-minpoly64: 
-	$(CXX) $(CXXFLAGS) $(src)/minpoly.cpp $(src)/rng_generic_64.c -o $@ $(ntl_flags)
-	./$@
-	mv minpoly.h $(src)/$@.h
-	rm $@ 
+minpolymt: $(rngmt_obj) 
+	$(call build_header)
+
+minpoly64: $(rng64_obj)
+	$(call build_header)
+
+minpolytinymt: $(rngtinymt_obj)
+	$(call build_header)
+
+
+# =====================================================================================
+# Generic rules for building object files
+# =====================================================================================
 
 build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 build/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+
+# =====================================================================================
+# Cleaning the build directory
+# =====================================================================================
 
 .PHONY: clean
 clean:
