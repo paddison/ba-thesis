@@ -39,14 +39,14 @@ struct Xor64 {
  * jump_algorithm = SLIDING_WINDOW_DECOMP
  * q = 3
  */
-Xor64RngGeneric* xor64_init();
+Xor64RngGeneric* xor64_rng_init();
 
 /**
  * Initialize the state Random number generator with @param seed.
  * If @param xor_64 is 0, it will be allocated on the heap and returned to the caller.
  *
  */
-Xor64RngGeneric*  xor64_init_seed(const uint64_t seed);
+Xor64RngGeneric*  xor64_rng_init_seed(const uint64_t seed);
 
 /**
  * Initialize the jump polynomial for the random number generator to a jump size of 
@@ -75,7 +75,7 @@ Xor64RngGeneric*  xor64_init_seed(const uint64_t seed);
  * jump_algorithm = SLIDING_WINDOW_DECOMP
  * q = 3
  */
-Xor64Jump* xor64_prepare_jump(const size_t jump_size, Xor64Config* cfg);
+Xor64Jump* xor64_jump_init(const size_t jump_size, Xor64Config* cfg);
 
 /**
  * Jump forward in the stream by @param jump steps.
@@ -91,12 +91,12 @@ void xor64_jump(Xor64RngGeneric* rng, Xor64Jump* jump);
  * 1. When changing the jump size, before a new call to xor64_prepare_jump.
  * 2. When cleaning up the application, in order to avoid leaks.
  */
-void xor64_clear_jump(Xor64Jump* jump);
+void xor64_jump_destroy(Xor64Jump* jump);
 
 /**
  * Destroys the random number generator, freeing all memory used by it.
  */
-void xor64_destroy(Xor64RngGeneric* rng);
+void xor64_rng_destroy(Xor64RngGeneric* rng);
 
 /**
  * Generates the next unsigned 64 bit number in the stream.

@@ -22,7 +22,9 @@ Xor64RngGeneric* xor64_rng_generic_init_seed(uint64_t seed);
 void xor64_rng_generic_destroy(Xor64RngGeneric* rng);
 long xor64_rng_generic_state_size();
 
+// ask christian if this is good style or not
 void xor64_rng_generic_gen_n_numbers(Xor64RngGeneric* rng, size_t N, uint64_t buf[N]);
+
 
 #ifdef TEST
 int xor64_rng_generic_compare_state(Xor64RngGeneric* lhs, Xor64RngGeneric* rhs);

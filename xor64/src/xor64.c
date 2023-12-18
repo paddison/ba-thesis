@@ -1,39 +1,36 @@
 #include <stdio.h>
 #include "xor64.h"
-#include "jump.h"
+#include "jump_ahead.h"
 #include "rng_generic.h"
 
 /* Header Implementations */
-Xor64RngGeneric* xor64_init() {
+Xor64RngGeneric* xor64_rng_init() {
     return xor64_rng_generic_init();
 }
 
-Xor64RngGeneric* xor64_init_seed(const uint64_t seed) {
+Xor64RngGeneric* xor64_rng_init_seed(const uint64_t seed) {
     Xor64 xor64 = { 0 };
 
     return xor64_rng_generic_init_seed(seed);
 }
 
-Xor64Jump* xor64_prepare_jump(size_t jump_size, Xor64Config* cfg) {
-    Xor64Jump* jump = malloc(sizeof(Xor64Jump));
-    return xor64_jump_init(jump, jump_size, cfg);
+Xor64Jump* xor64_jump_init(size_t jump_size, Xor64Config* cfg) {
+    return xor64_jump_ahead_init(jump_size, cfg);
 }
 
 void xor64_jump(Xor64RngGeneric* rng, Xor64Jump* jump) {
-    xor64_jump_jump(jump, rng);
+    xor64_jump_ahead_jump(jump, rng);
 }
 
-void xor64_clear_jump(Xor64Jump *jump) {
+void xor64_jump_destroy(Xor64Jump *jump) {
     if (jump) {
-        xor64_jump_destroy(jump); 
-        free(jump);
+        xor64_jump_ahead_destroy(jump); 
     }
 }
 
-void xor64_destroy(Xor64RngGeneric* rng) {
+void xor64_rng_destroy(Xor64RngGeneric* rng) {
     if (rng) { 
-        free(rng);
-        rng = 0;
+        xor64_rng_generic_destroy(rng);
     }
 }
 

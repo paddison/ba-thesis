@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "gray.h"
-#include "jump.h"
+#include "jump_ahead.h"
 #include "gf2x_wrapper.h"
 #include "rng_generic.h"
 #include "poly_decomp.h"
@@ -33,8 +33,9 @@ static Xor64RngGeneric* horner_sliding_window_decomp(const size_t Q, Xor64RngGen
  * Header Implementations                              |
  /----------------------------------------------------*/
 
-Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, size_t jump_size, Xor64Config* cfg) {
+Xor64Jump* xor64_jump_ahead_init(size_t jump_size, Xor64Config* cfg) {
 
+    Xor64Jump* jump_params = calloc(1, sizeof(Xor64Jump));
     // load the minimal polynomial from the header
     const GF2X* min_poly = load_min_poly();
     GF2X* jump_poly = GF2X_zero_init();
@@ -58,7 +59,7 @@ Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, size_t jump_size, Xor64Config
 }
 
 
-Xor64RngGeneric* xor64_jump_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng) {
+Xor64RngGeneric* xor64_jump_ahead_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng) {
     if (jump_params->algorithm == HORNER) return horner(rng, jump_params->jump_poly);
 
     init_sliding_window(jump_params->q, jump_params->h, rng);
@@ -76,7 +77,7 @@ Xor64RngGeneric* xor64_jump_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng) {
     }
 }
 
-void xor64_jump_destroy(Xor64Jump* jump_params) {
+void xor64_jump_ahead_destroy(Xor64Jump* jump_params) {
     GF2X_zero_destroy(jump_params->jump_poly);
     xor64_poly_decomp_destroy(jump_params->decomp_poly);
     for (size_t i = 0; i < 1 << jump_params->q; ++i) {
@@ -84,6 +85,7 @@ void xor64_jump_destroy(Xor64Jump* jump_params) {
     }
     free(jump_params->h);
     free(jump_params->decomp_poly);
+    free(jump_params);
 }
 
 /*------------------------------------------------------ 

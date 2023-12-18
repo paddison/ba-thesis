@@ -18,8 +18,8 @@ struct Xor64Jump {
     Xor64PolyDecomp* decomp_poly;
 };
 
-Xor64Jump* xor64_jump_init(Xor64Jump* jump_params, size_t jump_size, Xor64Config* c);
-Xor64RngGeneric* xor64_jump_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng);
-void xor64_jump_destroy(Xor64Jump* jump_params);
+Xor64Jump* xor64_jump_ahead_init(size_t jump_size, Xor64Config* c);
+Xor64RngGeneric* xor64_jump_ahead_jump(Xor64Jump* jump_params, Xor64RngGeneric* rng);
+void xor64_jump_ahead_destroy(Xor64Jump* jump_params);
 
 #endif

@@ -26,6 +26,12 @@ Xor64RngGeneric* xor64_rng_generic_init() {
     return rng;
 }
 
+Xor64RngGeneric* xor64_rng_generic_init_seed(uint64_t seed) {
+    Xor64RngGeneric* rng = xor64_rng_generic_init_zero();
+    rng->state = seed;
+    return rng;
+}
+
 Xor64RngGeneric* xor64_rng_generic_copy(Xor64RngGeneric *dest, 
         const Xor64RngGeneric *source) {
     dest->state = source->state;
@@ -49,18 +55,6 @@ uint64_t xor64_rng_generic_gen64(Xor64RngGeneric* rng) {
     return rng->state;
 }
 
-Xor64RngGeneric* xor64_rng_generic_init_seed(uint64_t seed) {
-    Xor64RngGeneric* rng = xor64_rng_generic_init_zero();
-    rng->state = seed;
-    return rng;
-}
-
-#ifndef CALC_MIN_POLY
-char* xor64_rng_generic_min_poly() {
-    return MIN_POLY;
-}
-#endif
-
 long xor64_rng_generic_state_size() {
     return XOR64_RNG_STATE_SIZE;
 }
@@ -68,6 +62,12 @@ long xor64_rng_generic_state_size() {
 void xor64_rng_generic_destroy(Xor64RngGeneric* rng) {
     free(rng);
 }
+
+#ifndef CALC_MIN_POLY
+char* xor64_rng_generic_min_poly() {
+    return MIN_POLY;
+}
+#endif
 
 #ifdef TEST
 int xor64_rng_generic_compare_state(Xor64RngGeneric* lhs, Xor64RngGeneric* rhs) {

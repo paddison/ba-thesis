@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "minunit.h"
 #include "config.h"
-#include "jump.h"
+#include "jump_ahead.h"
 #include "rng_generic.h"
 
 int tests_run = 0;
@@ -20,9 +20,9 @@ static int test_jump(size_t jump_size, Xor64Config* c) {
 
 
     Xor64Jump params = { 0 };
-    xor64_jump_init(&params, jump_size, c);
+    xor64_jump_ahead_init(&params, jump_size, c);
     do_n_steps(jump_size, iter);
-    xor64_jump_jump(&params, jump);
+    xor64_jump_ahead_jump(&params, jump);
 
     ret = xor64_rng_generic_compare_state(iter, jump);
 
@@ -40,8 +40,8 @@ static char* test_first_100k() {
         Xor64RngGeneric* jump = xor64_rng_generic_init();
         Xor64Jump params = { 0 };
 
-        xor64_jump_init(&params, i, &c);
-        xor64_jump_jump(&params, jump);
+        xor64_jump_ahead_init(&params, i, &c);
+        xor64_jump_ahead_jump(&params, jump);
         xor64_rng_generic_gen64(iter);
 
         if (!xor64_rng_generic_compare_state(jump, iter)) {

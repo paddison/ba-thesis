@@ -4,11 +4,11 @@
 #include "config.h"
 
 int main (void) {
-    Xor64RngGeneric* seq = xor64_init();
-    Xor64RngGeneric* rng = xor64_init();
-    Xor64Config cfg = { .q = 4, .algorithm = SLIDING_WINDOW_DECOMP };
+    Xor64RngGeneric* seq = xor64_rng_init();
+    Xor64RngGeneric* rng = xor64_rng_init();
+    Xor64Config cfg = { .q = 4, .algorithm = HORNER };
 
-    Xor64Jump* jump = xor64_prepare_jump(100, &cfg);
+    Xor64Jump* jump = xor64_jump_init(100, &cfg);
     xor64_jump(rng, jump);
 
     for (size_t i = 0; i < 100; ++i) xor64_next_unsigned(seq);
@@ -16,9 +16,9 @@ int main (void) {
     printf("num: %llu\n", xor64_next_unsigned(rng));
     printf("num: %llu\n", xor64_next_unsigned(seq));
 
-    xor64_clear_jump(jump);
+    xor64_jump_destroy(jump);
 
-    jump = xor64_prepare_jump(100000, &cfg);
+    jump = xor64_jump_init(100000, &cfg);
     xor64_jump(rng, jump);
 
     for (size_t i = 0; i < 100000; ++i) xor64_next_unsigned(seq);
@@ -26,10 +26,10 @@ int main (void) {
     printf("num: %llu\n", xor64_next_unsigned(rng));
     printf("num: %llu\n", xor64_next_unsigned(seq));
 
-    xor64_clear_jump(jump);
+    xor64_jump_destroy(jump);
 
-    xor64_destroy(rng);
-    xor64_destroy(seq);
+    xor64_rng_destroy(rng);
+    xor64_rng_destroy(seq);
 
     return EXIT_SUCCESS;
 }

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "minunit.h"
 #include "config.h"
-#include "jump.h"
+#include "jump_ahead.h"
 #include "rng_generic.h"
 
 #define SEED 362436000ull
@@ -19,9 +19,9 @@ static int test_jump(size_t jump_size, Xor64Config* c) {
     Xor64RngGeneric* iter = xor64_rng_generic_init_seed(SEED);
 
     Xor64Jump params = { 0 };
-    xor64_jump_init(&params, jump_size, c);
+    xor64_jump_ahead_init(&params, jump_size, c);
     do_n_steps(jump_size, iter);
-    xor64_jump_jump(&params, jump);
+    xor64_jump_ahead_jump(&params, jump);
 
     ret = xor64_rng_generic_compare_state(iter, jump);
 

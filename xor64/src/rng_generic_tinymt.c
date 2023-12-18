@@ -52,6 +52,10 @@ uint64_t xor64_rng_generic_gen64(Xor64RngGeneric* rng) {
     return tinymt64_generate_uint64(&rng->tinymt64);
 }
 
+void xor64_rng_generic_gen_n_numbers(Xor64RngGeneric* rng, size_t N, uint64_t buf[N]) {
+    for (size_t i = 0; i < N; ++i) buf[i] = xor64_rng_generic_gen64(rng);
+}
+
 void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
     tinymt64_next_state(&rng->tinymt64);
 }
@@ -62,10 +66,6 @@ void xor64_rng_generic_destroy(Xor64RngGeneric* rng) {
 
 long xor64_rng_generic_state_size() {
     return 128;
-}
-
-void xor64_rng_generic_gen_n_numbers(Xor64RngGeneric* rng, size_t N, uint64_t buf[N]) {
-    printf("not yet implemented\n");
 }
 
 #ifndef CALC_MIN_POLY
