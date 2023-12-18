@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include "xor64.h"
 #include "jump.h"
-#include "rng_generic/rng_generic.h"
+#include "rng_generic.h"
 
 /* Header Implementations */
 Xor64 xor64_init() {
     Xor64 xor64 = { 0 };
-    xor64.rng = calloc(1, sizeof(Xor64RngGeneric));
-    xor64_rng_generic_init(xor64.rng);
+    xor64.rng = xor64_rng_generic_init();
     xor64.jump = 0;
 
     return xor64;

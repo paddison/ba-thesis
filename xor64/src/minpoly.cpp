@@ -4,24 +4,25 @@
 
 #include "NTL/GF2X.h"
 
-#include "rng_generic/rng_generic.h"
+#include "rng_generic.h"
 
-#define F_NAME "../include/minpoly_out.h"
+#define F_NAME "minpoly.h"
 
 /* Forward Declarations */
 static void xor64_init_min_poly(NTL::GF2X& p_min);
 
 /* Internal Implementations */
 static void xor64_init_min_poly(NTL::GF2X& p_min) {
-    const int state_size = XOR64_RNG_STATE_SIZE;
+
+    const int state_size = xor64_rng_generic_state_size();
     const size_t seq_len = 2 * state_size ;
+    std::cout << state_size << std::endl;
 
     NTL::vec_GF2 seq(NTL::INIT_SIZE, seq_len);
-    Xor64RngGeneric rng = { 0 };
-    xor64_rng_generic_init(&rng);
+    Xor64RngGeneric* rng = xor64_rng_generic_init();
 
     for (size_t i = 0; i < seq_len; ++i) {
-        seq[i] = xor64_rng_generic_gen64(&rng) & 0x01ul;
+        seq[i] = xor64_rng_generic_gen64(rng) & 0x01ul;
     }
 
     NTL::MinPolySeq(p_min, seq, state_size);
@@ -46,7 +47,6 @@ int main(void) {
     FILE* file;
     NTL::GF2X p_min;
     size_t p_min_len;
-        printf("unable to open file");
 
     /* initialize minimal polynomial and write it to string */
     printf("%s\n", F_NAME);
@@ -60,11 +60,6 @@ int main(void) {
         printf("unable to open file");
         return EXIT_FAILURE;
     }
-#if defined(XorMT)
-    fwrite("//MT Poly\n", sizeof(char), 10, file);
-#else
-    fwrite("//64 Poly\n", sizeof(char), 10, file);
-#endif
     fwrite("#define MIN_POLY \"", sizeof(char), 18, file);
 
     if (fwrite(p_min_string, sizeof(char), p_min_len, file) != p_min_len) {

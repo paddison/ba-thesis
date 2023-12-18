@@ -1,11 +1,26 @@
-#define XorMT
 #include <string.h>
 #include <stdio.h>
-#include "rng_generic/rng_generic.h"
+
+#include "rng_generic.h"
+#ifndef CALC_MIN_POLY 
+#include "minpolymt.h"
+#endif
+
+#include "../lib/mt/mt.h"
 
 #define SEED 1234567
+#define XOR64_RNG_STATE_SIZE 19937
 
-Xor64RngGeneric* xor64_rng_generic_init(Xor64RngGeneric* rng) {
+struct Xor64RngGeneric {
+    MT mt;
+};
+
+Xor64RngGeneric* xor64_rng_generic_init_zero() {
+    return (Xor64RngGeneric* ) calloc(1, sizeof(Xor64RngGeneric));
+}
+
+Xor64RngGeneric* xor64_rng_generic_init() {
+    Xor64RngGeneric* rng = (Xor64RngGeneric* ) calloc(1, sizeof(Xor64RngGeneric));
     mt_init_genrand64(&rng->mt, SEED);
     return rng;
 }
@@ -85,8 +100,28 @@ void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
   }
 }
 
-Xor64RngGeneric* xor64_rng_generic_seed(Xor64RngGeneric* rng, uint64_t seed) {
+Xor64RngGeneric* xor64_rng_generic_init_seed(uint64_t seed) {
+    Xor64RngGeneric* rng = xor64_rng_generic_init_zero();
     mt_init_genrand64(&rng->mt, *(uint64_t*) seed);
-
     return rng;
 }
+
+long xor64_rng_generic_state_size() {
+    return XOR64_RNG_STATE_SIZE;
+}
+
+void xor64_rng_generic_destroy(Xor64RngGeneric* rng) {
+    free(rng);
+}
+
+#ifndef  CALC_MIN_POLY
+char* xor64_rng_generic_min_poly() {
+    return MIN_POLY;
+}
+#endif
+
+#ifdef TEST
+int xor64_rng_generic_compare_state(Xor64RngGeneric* lhs, Xor64RngGeneric* rhs) {
+    return lhs->mt.mt[lhs->mt.mti] == rhs->mt.mt[lhs->mt.mti];
+} 
+#endif

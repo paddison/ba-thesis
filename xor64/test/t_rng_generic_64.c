@@ -1,40 +1,29 @@
+#define TEST
 #include <stdio.h>
 #include "minunit.h"
-#include "../src/config.h"
-#include "../src/jump.h"
-#include "../src/rng_generic/rng_generic.h"
+#include "config.h"
+#include "jump.h"
+#include "rng_generic.h"
 
 #define SEED 362436000ull
 
 int tests_run = 0;
 
-//Xor64RngGeneric s_jump = (Xor64RngGeneric) { .state = SEED };
-//Xor64RngGeneric s_iter = (Xor64RngGeneric) { .state= SEED };
-const Xor64RngGeneric orig = (Xor64RngGeneric) { .state = SEED };
-
 static void do_n_steps(size_t n, Xor64RngGeneric* rng) {
     for (size_t i = 0; i < n; ++i) xor64_rng_generic_gen64(rng); 
 }
 
-static void reset_state(Xor64RngGeneric* rng) {
-    xor64_rng_generic_copy(rng, &orig);
-}
-
-static int compare_state(Xor64RngGeneric* iter, Xor64RngGeneric* jump) {
-    return jump->state == iter->state;
-}
-
 static int test_jump(size_t jump_size, Xor64Config* c) {
     int ret;
-    Xor64RngGeneric jump = { .state = SEED };
-    Xor64RngGeneric iter = { .state = SEED };
+    Xor64RngGeneric* jump = xor64_rng_generic_init_seed(SEED);
+    Xor64RngGeneric* iter = xor64_rng_generic_init_seed(SEED);
 
     Xor64Jump params = { 0 };
     xor64_jump_init(&params, jump_size, c);
-    do_n_steps(jump_size, &iter);
-    xor64_jump_jump(&params, &jump);
+    do_n_steps(jump_size, iter);
+    xor64_jump_jump(&params, jump);
 
-    ret = compare_state(&iter, &jump);
+    ret = xor64_rng_generic_compare_state(iter, jump);
 
     return ret;
 }

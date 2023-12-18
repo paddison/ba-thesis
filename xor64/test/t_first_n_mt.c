@@ -2,9 +2,9 @@
 
 #include <stdio.h>
 #include "minunit.h"
-#include "../src/config.h"
-#include "../src/jump.h"
-#include "../src/rng_generic/rng_generic.h"
+#include "config.h"
+#include "jump.h"
+#include "rng_generic/rng_generic.h"
 
 int tests_run = 0;
 

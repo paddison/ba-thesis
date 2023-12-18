@@ -75,9 +75,6 @@ uint64_t mt_genrand64_int64(MT* mt)
     static uint64_t mag01[2]={0ULL, MATRIX_A};
     uint64_t* state = (uint64_t*) &mt->mt[0];
 
-  
-    uint64_t ret = state[mt->mti++];
-
     if (mt->mti >= NN) { /* generate NN words at one time */
 
         /* if init_genrand64() has not been called, */
@@ -97,10 +94,12 @@ uint64_t mt_genrand64_int64(MT* mt)
         mt->mti = 0;
     }
 
+    uint64_t ret = state[mt->mti++];
+
     ret ^= (ret >> 29) & 0x5555555555555555ULL;
     ret ^= (ret << 17) & 0x71D67FFFEDA60000ULL;
     ret ^= (ret << 37) & 0xFFF7EEE000000000ULL;
     ret ^= (ret >> 43);
 
-    return x;
+    return ret;
 }
