@@ -6,7 +6,7 @@
 #include "minpolymt.h"
 #endif
 
-#include "../lib/mt/mt.h"
+#include "lib/mt/mt.h"
 
 #define SEED 1234567
 #define XOR64_RNG_STATE_SIZE 19937

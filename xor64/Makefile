@@ -40,13 +40,13 @@ all:
 # Targets for building the library, one for each random number generator
 # =====================================================================================
 
-rng64: $(objects) $(rng64) 
+rng64: $(objects) $(rng64) $(build)/test.o
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
 rngmt: $(objects) $(rngmt) 
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
-rngtinymt: $(objects) $(rngtinymt)
+rngtinymt: $(objects) $(rngtinymt) $(build)/test.o
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
 
@@ -73,14 +73,7 @@ t_rng_first_n_mt: $(rngmt_obj) $(objects) $(build)/t_first_n_mt.o
 # Building header files which contain the minimal polynomial of each respective rng
 # =====================================================================================
 
-headers: CXXFLAGS += -DCALC_MIN_POLY
-headers: CFLAGS += -DCALC_MIN_POLY
-headers: minpolymt.h minpoly64.h minpolytinymt.h
-
-minpolymt.h: minpolymt 
-minpoly64.h: minpoly64
-minpolytinymt.h: minpolytinymt
-
+# small helper function for building each headers
 define build_header
 	$(CXX) $(CXXFLAGS) $^ $(src)/minpoly.cpp -o $@ $(ntl_flags)
 	./$@
@@ -88,13 +81,18 @@ define build_header
 	rm $@ 
 endef
 
+headers: CXXFLAGS += -DCALC_MIN_POLY
+headers: CFLAGS += -DCALC_MIN_POLY
+headers: minpolymt.h minpoly64.h 
+
+minpolymt.h: minpolymt 
+minpoly64.h: minpoly64
+minpolytinymt.h: minpolytinymt
+
 minpolymt: $(rngmt_obj) 
 	$(call build_header)
 
 minpoly64: $(rng64_obj)
-	$(call build_header)
-
-minpolytinymt: $(rngtinymt_obj)
 	$(call build_header)
 
 

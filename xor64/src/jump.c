@@ -104,7 +104,7 @@ static GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
 
 // calculate jump polynomial by evaluating with horners method
 static Xor64RngGeneric* horner(Xor64RngGeneric* rng, GF2X* jump_poly) {
-    Xor64RngGeneric* tmp;  
+    Xor64RngGeneric* tmp = xor64_rng_generic_init_zero();  
     size_t i = GF2X_deg(jump_poly);
 
     xor64_rng_generic_copy(tmp, rng);

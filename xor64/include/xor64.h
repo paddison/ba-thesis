@@ -39,14 +39,14 @@ struct Xor64 {
  * jump_algorithm = SLIDING_WINDOW_DECOMP
  * q = 3
  */
-Xor64 xor64_init();
+Xor64RngGeneric* xor64_init();
 
 /**
  * Initialize the state Random number generator with @param seed.
  * If @param xor_64 is 0, it will be allocated on the heap and returned to the caller.
  *
  */
-Xor64 xor64_init_seed(const uint64_t seed);
+Xor64RngGeneric*  xor64_init_seed(const uint64_t seed);
 
 /**
  * Initialize the jump polynomial for the random number generator to a jump size of 
@@ -75,13 +75,13 @@ Xor64 xor64_init_seed(const uint64_t seed);
  * jump_algorithm = SLIDING_WINDOW_DECOMP
  * q = 3
  */
-void xor64_prepare_jump(Xor64* xor64, const size_t jump_size, Xor64Config* cfg);
+Xor64Jump* xor64_prepare_jump(const size_t jump_size, Xor64Config* cfg);
 
 /**
  * Jump forward in the stream by @param jump steps.
  * Can only be called after pxor64_prepare_jump.
  */
-void xor64_jump(Xor64* xor64);
+void xor64_jump(Xor64RngGeneric* rng, Xor64Jump* jump);
 
 /**
  * Clear the parameters for jumping ahead, freeing any space used by them. 
@@ -91,25 +91,26 @@ void xor64_jump(Xor64* xor64);
  * 1. When changing the jump size, before a new call to xor64_prepare_jump.
  * 2. When cleaning up the application, in order to avoid leaks.
  */
-void xor64_clear_jump(Xor64* xor64);
+void xor64_clear_jump(Xor64Jump* jump);
 
 /**
  * Destroys the random number generator, freeing all memory used by it.
  */
-void xor64_destroy(Xor64 *xor64);
+void xor64_destroy(Xor64RngGeneric* rng);
+
 /**
  * Generates the next unsigned 64 bit number in the stream.
  * '
  * Can only be used after a call to xor64_init()
  */ 
-uint64_t xor64_next_unsigned(Xor64* xor64);
+uint64_t xor64_next_unsigned(Xor64RngGeneric* rng);
 
 /**
  * Generates the next signed 64 bit number in the stream.
  * '
  * Can only be used after a call to xor64_init()
  */ 
-int64_t xor64_next_signed(Xor64* xor64);
+int64_t xor64_next_signed(Xor64RngGeneric* rng);
 
 /**
  * Generates the next real number in the stream. The number will be in the range of
@@ -117,6 +118,6 @@ int64_t xor64_next_signed(Xor64* xor64);
  * '
  * Can only be used after a call to xor64_init()
  */ 
-double xor64_next_double(Xor64* xor64);
+double xor64_next_double(Xor64RngGeneric* rng);
 
 #endif
