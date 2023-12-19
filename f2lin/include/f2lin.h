@@ -8,55 +8,36 @@
 typedef struct F2LinJump F2LinJump;
 typedef struct F2LinRngGeneric F2LinRngGeneric;
 
-typedef struct F2Lin F2Lin;
-
-struct F2Lin {
-    F2LinRngGeneric* rng;
-    F2LinJump* jump;
-};
-
 /**
- * Initialize the the state Random number generator. The seed will be predefined.
- * If @param xor_64 is 0, xor_64 will be heap allocated and returned to the caller.
+ * Initialize the Random number generator and return a pointer to it. 
+ * The seed will be predefined.
  *
+ * A generator created from this function must be destroyed with f2lin_rng_destroy()
+ * at the end of the application.
  *
- * Optionally @param cfg can be used to configure the application. 
- *
- * @param cfg is a struct containing two fields: 
- * -jump_algorithm: enum JumpAlgorithm
- *  The algorithm used for jumping. Possible values are:
- *      1. HORNER, 2. SLIDING_WINDOW, 3. SLIDING_WINDOW_DECOMP. 
- * -q: size_t
- * Only has an effect if jump_algorithm is SLIDING_WINDOW and SLIDING_WINDOW_DECOMP
- * This sets the size of the decomposition polynomials, when decomposing the jump polynomial.
- * Depending on the jump polynomial, different sizes for q can influence the performance.
- * has to be in the range of 1 - 10.
- *
- * See http://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/ARTICLES/jumpf2-printed.pdf for a
- * detailed description of what these parameters are.
- *
- * @param cfg can also be set to 0. In this, the default values will be used. These are:
- * jump_algorithm = SLIDING_WINDOW_DECOMP
- * q = 3
  */
 F2LinRngGeneric* f2lin_rng_init();
 
 /**
- * Initialize the state Random number generator with @param seed.
- * If @param xor_64 is 0, it will be allocated on the heap and returned to the caller.
+ * Initialize Random number generator with @param seed and return a pointer to it.
+ *
+ * A generator created from this function must be destroyed with f2lin_rng_destroy()
+ * at the end of the application.
  *
  */
 F2LinRngGeneric*  f2lin_rng_init_seed(const uint64_t seed);
 
 /**
- * Initialize the jump polynomial for the random number generator to a jump size of 
- * @param jump_size. Can only be called after pf2lin_init or pf2lin_init_seed.
+ * Initialize the jump parameters for the random number generator to a jump size of 
+ * @param jump_size. 
  *
- * This can also be used to change the jump size later, but ONLY after a call to 
- * f2lin_clear_jump.
+ * The returned pointer must be destroyed by a call to f2lin_jump_destroy().
+ *
+ * This can also be used to create several jumps for different jump sizes.
+ *
+ * It is not necessary though to call this several times with the same jump size.
  *
  * Optionally @param cfg can be used to configure the application. 
- *
  *
  * @param cfg is a struct containing two fields: 
  * -jump_algorithm: enum JumpAlgorithm
@@ -72,24 +53,18 @@ F2LinRngGeneric*  f2lin_rng_init_seed(const uint64_t seed);
  * detailed description of what these parameters are.
  *
  * @param cfg can also be set to 0. In this, the default values will be used. These are:
- * jump_algorithm = SLIDING_WINDOW_DECOMP
- * q = 3
+ *      jump_algorithm = SLIDING_WINDOW_DECOMP
+ *      q = 3
  */
 F2LinJump* f2lin_jump_init(const size_t jump_size, F2LinConfig* cfg);
 
 /**
- * Jump forward in the stream by @param jump steps.
- * Can only be called after pf2lin_prepare_jump.
+ * Jump @param rng forward in the stream, according to the parameters set in @param jump.
  */
 void f2lin_jump(F2LinRngGeneric* rng, F2LinJump* jump);
 
 /**
- * Clear the parameters for jumping ahead, freeing any space used by them. 
- * Only allowed to be called after f2lin_prepare_jump.
- *
- * There are two scenarios when a user might call this function:
- * 1. When changing the jump size, before a new call to f2lin_prepare_jump.
- * 2. When cleaning up the application, in order to avoid leaks.
+ * Destroy the parameters for jumping ahead, freeing any space used by them. 
  */
 void f2lin_jump_destroy(F2LinJump* jump);
 
