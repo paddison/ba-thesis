@@ -76,28 +76,33 @@ uint64_t xor64_rng_generic_gen64(Xor64RngGeneric* rng) {
     return mt_genrand64_int64(&rng->mt);
 }
 
-void xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
-  int num;
+uint64_t xor64_rng_generic_next_state(Xor64RngGeneric* rng) {
+  const int num = rng->mt.mti;
   uint64_t y;
   static uint64_t mag02[2]={0x0ul, MATRIX_A};
   uint64_t* state = &rng->mt.mt[0];
 
-  num = rng->mt.mti;
-  if (num < NN-MM){
-      y = (state[num] & UM) | (state[num+1] & LM);
-      state[num] = state[num+MM] ^ (y >> 1) ^ mag02[y & 1UL];
+  if (num < NN - MM){
+      y = (state[num] & UM) | (state[num + 1] & LM);
+      state[num] = state[num + MM] ^ (y >> 1) ^ mag02[y & 1UL];
       rng->mt.mti++;
   }
-  else if (num < NN-1){
-      y = (state[num] & UM) | (state[num+1] & LM);
-      state[num] = state[num+(MM-NN)] ^ (y >> 1) ^ mag02[y & 1UL];
+  else if (num < NN - 1){
+      y = (state[num] & UM) | (state[num + 1] & LM);
+      state[num] = state[num + (MM - NN)] ^ (y >> 1) ^ mag02[y & 1UL];
       rng->mt.mti++;
   }
-  else if (num == NN-1){
-      y = (state[NN-1] & UM) | (state[0] & LM);
-      state[NN-1] = state[MM-1] ^ (y >> 1) ^ mag02[y % 1UL];
+  else if (num == NN - 1){
+      y = (state[NN - 1] & UM) | (state[0] & LM);
+      state[NN - 1] = state[MM - 1] ^ (y >> 1) ^ mag02[y % 1UL];
       rng->mt.mti = 0;
   }
+
+  return rng->mt.mt[num];
+}
+
+void xor64_rng_generic_gen_n_numbers(Xor64RngGeneric* rng, size_t N, uint64_t buf[N]) {
+    for (size_t i = 0; i < N; ++i) buf[i] = xor64_rng_generic_gen64(rng);
 }
 
 Xor64RngGeneric* xor64_rng_generic_init_seed(uint64_t seed) {

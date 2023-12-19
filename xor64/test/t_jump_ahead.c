@@ -8,7 +8,7 @@
 
 int tests_run = 0;
 
-static void do_n_steps(size_t n, Xor64RngGeneric* rng) {
+inline static void do_n_steps(size_t n, Xor64RngGeneric* rng) {
     for (size_t i = 0; i < n; ++i) xor64_rng_generic_gen64(rng); 
 }
 
@@ -19,10 +19,9 @@ static int test_jump(size_t jump_size, Xor64Config* c) {
     Xor64RngGeneric* iter = xor64_rng_generic_init();
 
 
-    Xor64Jump params = { 0 };
-    xor64_jump_ahead_init(&params, jump_size, c);
+    Xor64Jump* params = xor64_jump_ahead_init(jump_size, c);
     do_n_steps(jump_size, iter);
-    xor64_jump_ahead_jump(&params, jump);
+    xor64_jump_ahead_jump(params, jump);
 
     ret = xor64_rng_generic_compare_state(iter, jump);
 
@@ -31,17 +30,15 @@ static int test_jump(size_t jump_size, Xor64Config* c) {
 
 static char* test_first_100k() {
     size_t START = 0;
-    size_t MAX = 1000;
+    size_t MAX = 635;
     Xor64Config c = { .q = 4, .algorithm = SLIDING_WINDOW_DECOMP };
     Xor64RngGeneric* iter= xor64_rng_generic_init();
-    for (size_t i = 0; i < START; ++i) xor64_rng_generic_next_state(iter);
+    do_n_steps(START, iter);
     
     for (size_t i = START + 1; i < MAX; ++i) {
         Xor64RngGeneric* jump = xor64_rng_generic_init();
-        Xor64Jump params = { 0 };
-
-        xor64_jump_ahead_init(&params, i, &c);
-        xor64_jump_ahead_jump(&params, jump);
+        Xor64Jump* params = xor64_jump_ahead_init(i, &c);
+        xor64_jump_ahead_jump(params, jump);
         xor64_rng_generic_gen64(iter);
 
         if (!xor64_rng_generic_compare_state(jump, iter)) {

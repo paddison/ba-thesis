@@ -34,12 +34,9 @@ static Xor64RngGeneric* horner_sliding_window_decomp(const size_t Q, Xor64RngGen
  /----------------------------------------------------*/
 
 Xor64Jump* xor64_jump_ahead_init(size_t jump_size, Xor64Config* cfg) {
-
-    Xor64Jump* jump_params = calloc(1, sizeof(Xor64Jump));
     // load the minimal polynomial from the header
     const GF2X* min_poly = load_min_poly();
-    GF2X* jump_poly = GF2X_zero_init();
-
+    Xor64Jump* jump_params = calloc(1, sizeof(Xor64Jump));
     Xor64Config def = { .q = Q_DEFAULT, .algorithm = ALGORITHM_DEFAULT };
 
     // verify config
@@ -55,6 +52,7 @@ Xor64Jump* xor64_jump_ahead_init(size_t jump_size, Xor64Config* cfg) {
     // initialize jump and decomposition polynomials
     jump_params->decomp_poly = xor64_poly_decomp_init_from_gf2x(jump_params->jump_poly, jump_params->q);
     GF2X_zero_destroy(min_poly);
+    GF2X_print(jump_params->jump_poly);
     return jump_params;
 }
 
@@ -101,6 +99,7 @@ static GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
     GF2XModulus_build(minimal_poly_mod, min_poly);
     GF2X_PowerMod(jump_poly, x, jump_size, minimal_poly_mod);
     
+    //GF2X_print(jump_poly);
     return jump_poly;
 }
 

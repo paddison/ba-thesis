@@ -6,7 +6,6 @@
 /* 
  * Forward Declarations 
  */
-
 static int cmp_uint64_t(const void* a, const void* b);
 
 static inline uint64_t median(const size_t len, const uint64_t data[len]);
@@ -23,7 +22,6 @@ static double average(const size_t len, const uint64_t sanitized[len]);
 /* 
  * Header implementations 
  */
-
 double get_result(const size_t len, uint64_t data[len]) {
     // sort the data
     uint64_t med, mad;
@@ -47,7 +45,6 @@ double get_result(const size_t len, uint64_t data[len]) {
 /* 
  * Internal implementations 
  */
-
 int cmp_uint64_t(const void* a, const void* b) {
     if (*(uint64_t*)a > *(uint64_t*)b) return 1;
     else if (*(uint64_t*)a < *(uint64_t*)b) return -1;

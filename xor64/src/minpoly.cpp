@@ -22,7 +22,7 @@ static void xor64_init_min_poly(NTL::GF2X& p_min) {
     Xor64RngGeneric* rng = xor64_rng_generic_init();
 
     for (size_t i = 0; i < seq_len; ++i) {
-        seq[i] = xor64_rng_generic_gen64(rng) & 0x01ul;
+        seq[i] = xor64_rng_generic_next_state(rng) & 0x01ul;
     }
 
     NTL::MinPolySeq(p_min, seq, state_size);

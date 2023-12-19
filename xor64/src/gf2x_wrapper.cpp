@@ -21,6 +21,10 @@ long GF2X_deg(const GF2X* p) {
     return deg(*p);
 }
 
+void GF2X_print(const GF2X* x) {
+    std::cout << *x << std::endl;
+}
+
 
 GF2XModulus* GF2XModulus_zero_init() {
     return new GF2XModulus();
@@ -37,3 +41,4 @@ void GF2XModulus_build(GF2XModulus* F, const GF2X* f) {
 void GF2X_PowerMod(GF2X* x, const GF2X* a, const long e, const GF2XModulus* F) {
     PowerMod(*x, *a, e, *F);
 }
+

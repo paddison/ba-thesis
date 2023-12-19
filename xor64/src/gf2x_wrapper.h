@@ -28,6 +28,8 @@ void GF2X_SetCoeff(GF2X* p, long i, long a);
 
 long GF2X_deg(const GF2X* p);
 
+void GF2X_print(const GF2X* x);
+
 
 GF2XModulus* GF2XModulus_zero_init();
 

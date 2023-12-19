@@ -25,13 +25,17 @@ rngtinymt_obj := $(patsubst %.c, $(build)/%.o, $(rngtinymt))
 rngmt := rng_generic_mt.c mt.c
 rngmt_obj   := $(patsubst %.c, $(build)/%.o, $(rngmt))
 
+# object files for using xoshiro256
+rngxoshiro := rng_generic_xoshiro.c
+rngxoshiro_obj   := $(patsubst %.c, $(build)/%.o, $(rngxoshiro))
+
 # this tells make where all the source files, headers etc. are
 vpath %.c src:src/lib/mt:src/lib/tinymt:test
 vpath %.cpp src
 vpath %.o build
 vpath %.h include src
 
-all: rng64test rngmttest rngtinymttest
+all: rng64test rngmttest rngtinymttest rngxoshirotest
 
 rng64test: $(objects) $(rng64) $(build)/test.o
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
@@ -41,6 +45,10 @@ rngmttest: $(objects) $(rngmt) $(build)/test.o
 
 rngtinymttest: $(objects) $(rngtinymt) $(build)/test.o
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+rngxoshirotest: $(objects) $(rngxoshiro) $(build)/test.o
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
 
 # =====================================================================================
 # Targets for building the library, one for each random number generator
@@ -61,20 +69,44 @@ rngtinymt: $(objects) $(rngtinymt)
 # Building the tests for the application
 # =====================================================================================
 
+jump_ahead := $(build)/t_jump_ahead.o
+verify_min_poly := $(build)/t_verify_min_poly.o
+
 test: CXXFLAGS += -DTEST
 test: CFLAGS += -DTEST
-test: t_rng_first_n_tinymt t_rng_first_n_mt t_rng_first_n_64
-	echo "test"
+test: t_verify_min_poly t_jump_ahead 
+	echo "hallo"
 
-t_rng_first_n_64: $(rng64_obj) $(objects) $(build)/t_first_n.o
+t_jump_ahead: t_jump_ahead_tinymt t_jump_ahead_mt t_jump_ahead_64 t_jump_ahead_xoshiro
+	echo "hallo"
+
+# Test the if jump is the same than iterative for the first n numbers
+t_jump_ahead_64: $(rng64_obj) $(objects) $(jump_ahead)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
-t_rng_first_n_tinymt: $(rngtinymt_obj) $(objects) $(build)/t_first_n.o
+t_jump_ahead_tinymt: $(rngtinymt_obj) $(objects) $(jump_ahead)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
-t_rng_first_n_mt: $(rngmt_obj) $(objects) $(build)/t_first_n.o
+t_jump_ahead_mt: $(rngmt_obj) $(objects) $(jump_ahead)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
+t_jump_ahead_xoshiro: $(rngxoshiro_obj) $(objects) $(jump_ahead)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_verify_min_poly: t_verify_min_poly_tinymt t_verify_min_poly_mt t_verify_min_poly_64 t_verify_min_poly_xoshiro
+	echo "hallo"
+
+t_verify_min_poly_64: $(rng64_obj) $(objects) $(verify_min_poly)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_verify_min_poly_tinymt: $(rngtinymt_obj) $(objects) $(verify_min_poly)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_verify_min_poly_mt: $(rngmt_obj) $(objects) $(verify_min_poly)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_verify_min_poly_xoshiro: $(rngxoshiro_obj) $(objects) $(verify_min_poly)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
 # =====================================================================================
 # Building header files which contain the minimal polynomial of each respective rng
@@ -85,22 +117,47 @@ define build_header
 	$(CXX) $(CXXFLAGS) $^ $(src)/minpoly.cpp -o $@ $(ntl_flags)
 	./$@
 	mv minpoly.h $(src)/$@.h
-	rm $@ 
+	 
 endef
 
 headers: CXXFLAGS += -DCALC_MIN_POLY
 headers: CFLAGS += -DCALC_MIN_POLY
-headers: minpolymt.h minpoly64.h 
+headers: minpolymt.h minpoly64.h minpolyxoshiro.h minpolytinymt.h
 
 minpolymt.h: minpolymt 
 minpoly64.h: minpoly64
 minpolytinymt.h: minpolytinymt
+minpolyxoshiro.h: minpolyxoshiro
 
 minpolymt: $(rngmt_obj) 
 	$(call build_header)
 
 minpoly64: $(rng64_obj)
 	$(call build_header)
+
+minpolyxoshiro: $(rngxoshiro_obj)
+	$(call build_header)
+
+minpolytinymt: $(rngtinymt_obj)
+	$(call build_header)
+
+# =====================================================================================
+# Verifiying minimal polynomials 
+# =====================================================================================
+
+verify: verify64 verifyxoshiro verifytinymt verifymt
+
+verify64: $(rng64_obj) $(objects) $(build)/verify_min_poly.o
+	$(CXX) $(CXXFLAGS) $^  -o $(out)/$@ $(ntl_flags)
+
+verifyxoshiro: $(rngxoshiro_obj) $(objects) $(build)/verify_min_poly.o
+	$(CXX) $(CXXFLAGS) $^  -o $(out)/$@ $(ntl_flags)
+
+verifytinymt: $(rngtinymt_obj) $(objects) $(build)/verify_min_poly.o
+	$(CXX) $(CXXFLAGS) $^  -o $(out)/$@ $(ntl_flags)
+
+verifymt: $(rngmt_obj) $(objects) $(build)/verify_min_poly.o
+	$(CXX) $(CXXFLAGS) $^  -o $(out)/$@ $(ntl_flags)
 
 
 # =====================================================================================
