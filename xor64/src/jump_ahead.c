@@ -5,7 +5,7 @@
 #include "gray.h"
 #include "jump_ahead.h"
 #include "gf2x_wrapper.h"
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 #include "poly_decomp.h"
 
 /*------------------------------------------------------ 
@@ -21,12 +21,12 @@ static GF2X* load_min_poly();
 static void verify_config(Xor64Config* cfg);
 
 // functions used for implementing the jump algorithm
-static void init_sliding_window(size_t Q, Xor64RngGeneric* h[1 << Q], Xor64RngGeneric* rng);
-static void precompute_A(size_t Q, Xor64RngGeneric* A[Q + 1], const Xor64RngGeneric* rng);
-static void compute_decomposition_polys(size_t Q, Xor64RngGeneric* h[1 << Q], Xor64RngGeneric* A[Q + 1]);
-static Xor64RngGeneric* horner(Xor64RngGeneric* rng, GF2X* jump_poly);
-static Xor64RngGeneric* horner_sliding_window(const size_t Q, Xor64RngGeneric* rng, const GF2X* jump_poly, const Xor64RngGeneric* h[1 << Q]);
-static Xor64RngGeneric* horner_sliding_window_decomp(const size_t Q, Xor64RngGeneric* rng, const Xor64PolyDecomp* jump_poly, const Xor64RngGeneric* h[1 << Q]);
+static void init_sliding_window(const int Q, Xor64RngGeneric* h[1 << Q], Xor64RngGeneric* rng);
+static void precompute_A(const int Q, Xor64RngGeneric* A[Q + 1], const Xor64RngGeneric* rng);
+static void compute_decomposition_polys(const int Q, Xor64RngGeneric* h[1 << Q], const Xor64RngGeneric* A[Q + 1]);
+static Xor64RngGeneric* horner(Xor64RngGeneric* rng, const GF2X* jump_poly);
+static Xor64RngGeneric* horner_sliding_window(const int Q, Xor64RngGeneric* rng, const GF2X* jump_poly, const Xor64RngGeneric* h[1 << Q]);
+static Xor64RngGeneric* horner_sliding_window_decomp(const int Q, Xor64RngGeneric* rng, const Xor64PolyDecomp* jump_poly, const Xor64RngGeneric* h[1 << Q]);
 
 
 /*------------------------------------------------------ 
@@ -52,7 +52,7 @@ Xor64Jump* xor64_jump_ahead_init(size_t jump_size, Xor64Config* cfg) {
     // initialize jump and decomposition polynomials
     jump_params->decomp_poly = xor64_poly_decomp_init_from_gf2x(jump_params->jump_poly, jump_params->q);
     GF2X_zero_destroy(min_poly);
-    GF2X_print(jump_params->jump_poly);
+    //GF2X_print(jump_params->jump_poly);
     return jump_params;
 }
 
@@ -103,29 +103,23 @@ static GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
     return jump_poly;
 }
 
-// calculate jump polynomial by evaluating with horners method
-static Xor64RngGeneric* horner(Xor64RngGeneric* rng, GF2X* jump_poly) {
-    Xor64RngGeneric* tmp = xor64_rng_generic_init_zero();  
-    size_t i = GF2X_deg(jump_poly);
-
-    xor64_rng_generic_copy(tmp, rng);
-
-    if (i > 0) {
-        xor64_rng_generic_next_state(tmp);
-        --i;
-        for(; i > 0; --i) {
-            if(GF2X_coeff(jump_poly, i) != 0) xor64_rng_generic_add(tmp, rng);
-            xor64_rng_generic_next_state(tmp);
-        }
-
-        if(GF2X_coeff(jump_poly, 0) != 0) xor64_rng_generic_add(tmp, rng);
+static GF2X* load_min_poly() {
+    GF2X* min_poly = GF2X_zero_init();
+    char* min_poly_string = xor64_rng_generic_min_poly();
+    for (size_t i = 0; min_poly_string[i] != 0; ++i) {
+        GF2X_SetCoeff(min_poly, i, min_poly_string[i] == '1' ? 1 : 0);
     }
-
-    xor64_rng_generic_copy(rng, tmp);
-    return rng;
+    return min_poly;
 }
 
-static void init_sliding_window(size_t Q, Xor64RngGeneric* h[1 << Q], Xor64RngGeneric* rng) {
+static void verify_config(Xor64Config* cfg) {
+    if (cfg->q > Q_MAX || cfg->q == 0)  {
+        fprintf(stderr, "Invalid value for Q: %d, defaulting to 4", cfg->q);
+        cfg->q = Q_DEFAULT;
+    }
+}
+
+static void init_sliding_window(const int Q, Xor64RngGeneric* h[1 << Q], Xor64RngGeneric* rng) {
     // in the paper, the seed is denoted as 'x'
     Xor64RngGeneric* A[Q + 1]; // = A^j * x
 
@@ -142,26 +136,9 @@ static void init_sliding_window(size_t Q, Xor64RngGeneric* h[1 << Q], Xor64RngGe
 
 }
 
-static void verify_config(Xor64Config* cfg) {
-    if (cfg->q > Q_MAX || cfg->q == 0)  {
-        fprintf(stderr, "Invalid value for Q: %d, defaulting to 4", cfg->q);
-        cfg->q = Q_DEFAULT;
-    }
-}
-
-static GF2X* load_min_poly() {
-    GF2X* min_poly = GF2X_zero_init();
-    char* min_poly_string = xor64_rng_generic_min_poly();
-    for (size_t i = 0; min_poly_string[i] != 0; ++i) {
-        GF2X_SetCoeff(min_poly, i, min_poly_string[i] == '1' ? 1 : 0);
-    }
-    return min_poly;
-}
-
-
 // precomputes A^0x..A^qx which are the first q state transitions
 // (equivalent to repeated calls to step()
-static void precompute_A(size_t Q, Xor64RngGeneric* A[Q + 1], const Xor64RngGeneric* rng) {
+static void precompute_A(const int Q, Xor64RngGeneric* A[Q + 1], const Xor64RngGeneric* rng) {
     Xor64RngGeneric* tmp = xor64_rng_generic_init_zero();// = calloc(1, sizeof(*rng)); 
     xor64_rng_generic_copy(tmp, rng);
 
@@ -174,8 +151,8 @@ static void precompute_A(size_t Q, Xor64RngGeneric* A[Q + 1], const Xor64RngGene
     xor64_rng_generic_destroy(tmp);
 }
 
-static void compute_decomposition_polys(size_t Q, Xor64RngGeneric* h[1 << Q], 
-                                      Xor64RngGeneric* A[Q + 1]) {
+static void compute_decomposition_polys(const int Q, Xor64RngGeneric* h[1 << Q], 
+                                      const Xor64RngGeneric* A[Q + 1]) {
     // A[Q] is the polynomial component which contains z^q,
     // which is always included, and thus used to initialize
     // the decomposition polys
@@ -198,7 +175,29 @@ static void compute_decomposition_polys(size_t Q, Xor64RngGeneric* h[1 << Q],
     }
 }
 
-static Xor64RngGeneric* horner_sliding_window(size_t Q, Xor64RngGeneric* rng, const GF2X* jump_poly, const Xor64RngGeneric* h[1 << Q]) {
+// calculate jump polynomial by evaluating with horners method
+static Xor64RngGeneric* horner(Xor64RngGeneric* rng, const GF2X* jump_poly) {
+    Xor64RngGeneric* tmp = xor64_rng_generic_init_zero();  
+    size_t i = GF2X_deg(jump_poly);
+
+    xor64_rng_generic_copy(tmp, rng);
+
+    if (i > 0) {
+        xor64_rng_generic_next_state(tmp);
+        --i;
+        for(; i > 0; --i) {
+            if(GF2X_coeff(jump_poly, i) != 0) xor64_rng_generic_add(tmp, rng);
+            xor64_rng_generic_next_state(tmp);
+        }
+
+        if(GF2X_coeff(jump_poly, 0) != 0) xor64_rng_generic_add(tmp, rng);
+    }
+
+    xor64_rng_generic_copy(rng, tmp);
+    return rng;
+}
+
+static Xor64RngGeneric* horner_sliding_window(int Q, Xor64RngGeneric* rng, const GF2X* jump_poly, const Xor64RngGeneric* h[1 << Q]) {
     // use horners method with sliding window
     Xor64RngGeneric* tmp = xor64_rng_generic_init_zero();
     int i = GF2X_deg(jump_poly); 
@@ -246,7 +245,7 @@ static Xor64RngGeneric* horner_sliding_window(size_t Q, Xor64RngGeneric* rng, co
     return rng;
 }
 
-static Xor64RngGeneric* horner_sliding_window_decomp(size_t Q, Xor64RngGeneric* rng, const Xor64PolyDecomp* decomp_poly, const Xor64RngGeneric** h) {
+static Xor64RngGeneric* horner_sliding_window_decomp(const int Q, Xor64RngGeneric* rng, const Xor64PolyDecomp* decomp_poly, const Xor64RngGeneric** h) {
     Xor64RngGeneric* tmp = xor64_rng_generic_init_zero();
 
     // go to first non zero coefficient

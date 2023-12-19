@@ -4,7 +4,7 @@
 
 #include "NTL/GF2X.h"
 
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 
 #define F_NAME "minpoly.h"
 

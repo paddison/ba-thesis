@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "minunit.h"
 #include "gf2x_wrapper.h"
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 
 int tests_run = 0;
 // calculate jump polynomial by evaluating with horners method

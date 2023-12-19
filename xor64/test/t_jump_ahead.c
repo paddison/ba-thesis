@@ -4,28 +4,12 @@
 #include "minunit.h"
 #include "config.h"
 #include "jump_ahead.h"
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 
 int tests_run = 0;
 
 inline static void do_n_steps(size_t n, Xor64RngGeneric* rng) {
     for (size_t i = 0; i < n; ++i) xor64_rng_generic_gen64(rng); 
-}
-
-
-static int test_jump(size_t jump_size, Xor64Config* c) {
-    int ret;
-    Xor64RngGeneric* jump = xor64_rng_generic_init();
-    Xor64RngGeneric* iter = xor64_rng_generic_init();
-
-
-    Xor64Jump* params = xor64_jump_ahead_init(jump_size, c);
-    do_n_steps(jump_size, iter);
-    xor64_jump_ahead_jump(params, jump);
-
-    ret = xor64_rng_generic_compare_state(iter, jump);
-
-    return ret;
 }
 
 static char* test_first_100k() {

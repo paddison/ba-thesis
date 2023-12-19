@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "xor64.h"
 #include "jump_ahead.h"
-#include "rng_generic.h"
+#include "rng_generic/rng_generic.h"
 
 /* Header Implementations */
 Xor64RngGeneric* xor64_rng_init() {

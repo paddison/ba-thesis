@@ -1,5 +1,5 @@
-CXXFLAGS := -g -std=c++11 -I ./include -I ./src
-CFLAGS := -g -I ./include -I ./src
+CXXFLAGS := -g -std=c++11 -I ./include -I ./src -I ./src/rng_generic
+CFLAGS := -g -I ./include -I ./src -I ./src/rng_generic
 ntl_flags := -lntl -lgmp -lgf2x
 
 src := src
@@ -30,7 +30,7 @@ rngxoshiro := rng_generic_xoshiro.c
 rngxoshiro_obj   := $(patsubst %.c, $(build)/%.o, $(rngxoshiro))
 
 # this tells make where all the source files, headers etc. are
-vpath %.c src:src/lib/mt:src/lib/tinymt:test
+vpath %.c src:src/rng_generic:src/lib/mt:src/lib/tinymt:test
 vpath %.cpp src
 vpath %.o build
 vpath %.h include src
@@ -71,10 +71,11 @@ rngtinymt: $(objects) $(rngtinymt)
 
 jump_ahead := $(build)/t_jump_ahead.o
 verify_min_poly := $(build)/t_verify_min_poly.o
+jump_ahead_algorithms := $(build)/t_jump_ahead_algorithms.o
 
 test: CXXFLAGS += -DTEST
 test: CFLAGS += -DTEST
-test: t_verify_min_poly t_jump_ahead 
+test: t_verify_min_poly t_jump_ahead t_jump_ahead_algorithms
 	echo "hallo"
 
 t_jump_ahead: t_jump_ahead_tinymt t_jump_ahead_mt t_jump_ahead_64 t_jump_ahead_xoshiro
@@ -93,6 +94,7 @@ t_jump_ahead_mt: $(rngmt_obj) $(objects) $(jump_ahead)
 t_jump_ahead_xoshiro: $(rngxoshiro_obj) $(objects) $(jump_ahead)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
+
 t_verify_min_poly: t_verify_min_poly_tinymt t_verify_min_poly_mt t_verify_min_poly_64 t_verify_min_poly_xoshiro
 	echo "hallo"
 
@@ -106,6 +108,22 @@ t_verify_min_poly_mt: $(rngmt_obj) $(objects) $(verify_min_poly)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
 t_verify_min_poly_xoshiro: $(rngxoshiro_obj) $(objects) $(verify_min_poly)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+
+t_jump_ahead_algorithms: t_jump_ahead_algorithms_tinymt t_jump_ahead_algorithms_mt t_jump_ahead_algorithms_64 t_jump_ahead_algorithms_xoshiro
+	echo "hallo"
+
+t_jump_ahead_algorithms_64: $(rng64_obj) $(objects) $(jump_ahead_algorithms)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_jump_ahead_algorithms_tinymt: $(rngtinymt_obj) $(objects) $(jump_ahead_algorithms)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_jump_ahead_algorithms_mt: $(rngmt_obj) $(objects) $(jump_ahead_algorithms)
+	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+t_jump_ahead_algorithms_xoshiro: $(rngxoshiro_obj) $(objects) $(jump_ahead_algorithms)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
 # =====================================================================================
