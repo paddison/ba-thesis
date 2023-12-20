@@ -5,7 +5,7 @@
 # Compile Flags
 #-----------------------------------------
 
-CXXFLAGS := -g -std=c++11 -I ./include -I ./src -I ./src/rng_generic
+CXXFLAGS := -g -std=c++11 -I ./include -I ./src -I ./src/rng_generic 
 CFLAGS := -g -I ./include -I ./src -I ./src/rng_generic
 ntl_flags := -lntl -lgmp -lgf2x
 
@@ -17,6 +17,7 @@ build := build
 out := bin
 lib := lib
 inc := include
+bench := benchmark
 
 # object files needed for running the algorithm etc.
 #-----------------------------------------
@@ -47,7 +48,7 @@ rngxoshiro_obj   := $(patsubst %.c, $(build)/%.o, $(rngxoshiro))
 # this tells make where all the source files, headers etc. are
 #-----------------------------------------
 
-vpath %.c src:src/rng_generic:src/lib/mt:src/lib/tinymt:test
+vpath %.c src:src/rng_generic:src/lib/mt:src/lib/tinymt:test:benchmark
 vpath %.cpp src
 vpath %.o build
 vpath %.h include src
@@ -161,6 +162,18 @@ t_verify_min_poly_mt: $(rngmt_obj) $(objects) $(verify_min_poly)
 
 t_verify_min_poly_xoshiro: $(rngxoshiro_obj) $(objects) $(verify_min_poly)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+
+
+# =====================================================================================
+# Rules for building the benachmark executables
+# =====================================================================================
+
+benchmark: CFLAGS += -I $(bench)
+benchmark: CXXFLAGS += -I $(bench)
+benchmark: b_jump_ahead_algorithms_64
+
+b_jump_ahead_algorithms_64: $(rngmt_obj) $(objects) $(build)/b_jump_ahead_algorithms.o
+	$(CXX) $(CXXFLAGS) -O2  $^ -o $(out)/$@ $(ntl_flags)
 
 # =====================================================================================
 # Building header files which contain the minimal polynomial of each respective rng

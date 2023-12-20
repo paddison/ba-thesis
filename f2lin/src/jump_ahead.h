@@ -4,6 +4,8 @@
 #include <stdlib.h>
 
 #include "config.h"
+#include <stdint.h>
+#include <inttypes.h>
 
 typedef struct F2LinJump F2LinJump;
 typedef struct F2LinRngGeneric F2LinRngGeneric;

@@ -2,6 +2,8 @@
 #define PXOR64_POLY_H
 
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include "gf2x_wrapper.h"
 
 typedef struct F2LinPolyDecompParam F2LinPolyDecompParam;

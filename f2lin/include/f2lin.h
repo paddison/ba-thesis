@@ -2,6 +2,8 @@
 #define PXORSHIFT_H
 
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include "config.h"
 
 /* Opaque pointer definitions to hide implementation details */

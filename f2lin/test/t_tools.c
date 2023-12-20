@@ -1,4 +1,4 @@
-#include "../src/minunit.h"
+#include "minunit.h"
 #include "../benchmark/tools.c"
 #include <string.h>
 

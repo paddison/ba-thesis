@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 /**
  * Represents the current state of the rng, e.g. the current random number
