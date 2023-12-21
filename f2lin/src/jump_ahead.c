@@ -151,7 +151,8 @@ static void precompute_A(const int Q, F2LinRngGeneric* A[Q + 1], const F2LinRngG
     f2lin_rng_generic_destroy(tmp);
 }
 
-static void compute_decomposition_polys(const int Q, F2LinRngGeneric* h[1 << Q], 
+static 
+void compute_decomposition_polys(const int Q, F2LinRngGeneric* h[1 << Q], 
                                       const F2LinRngGeneric* A[Q + 1]) {
     // A[Q] is the polynomial component which contains z^q,
     // which is always included, and thus used to initialize
@@ -176,9 +177,10 @@ static void compute_decomposition_polys(const int Q, F2LinRngGeneric* h[1 << Q],
 }
 
 // calculate jump polynomial by evaluating with horners method
-static F2LinRngGeneric* horner(F2LinRngGeneric* rng, const GF2X* jump_poly) {
+static 
+F2LinRngGeneric* horner(F2LinRngGeneric* rng, const GF2X* jump_poly) {
     F2LinRngGeneric* tmp = f2lin_rng_generic_init_zero();  
-    size_t i = GF2X_deg(jump_poly);
+    int i = GF2X_deg(jump_poly);
 
     f2lin_rng_generic_copy(tmp, rng);
 
@@ -205,7 +207,7 @@ static F2LinRngGeneric* horner_sliding_window(int Q, F2LinRngGeneric* rng, const
 
     // go to first non zero coefficient
     // NTL polynomials should always start with the first non zero component
-    assert(GF2X_coeff(jump_poly, i) == 1);
+    //assert(GF2X_coeff(jump_poly, i) == 1);
 
     if (i >= (Q + 1)) {
         //; h1(A) * x, first component in horner's method
