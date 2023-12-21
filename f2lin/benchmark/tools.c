@@ -6,34 +6,39 @@
 /* 
  * Forward Declarations 
  */
-static int cmp_uint64_t(const void* a, const void* b);
+static 
+int cmp_double(const void* a, const void* b);
 
-static inline uint64_t median(const size_t len, const uint64_t data[len]);
+static inline 
+double median(const size_t len, const double data[len]);
 
-static uint64_t median_absolute_deviation(const size_t len, const uint64_t data[len], 
-                                          const uint64_t med);
+static 
+double median_absolute_deviation(const size_t len, const double data[len], 
+                                          const double med);
 
-static uint64_t remove_outliers(const size_t len, const uint64_t data[len], 
-                                uint64_t sanitized[len], const uint64_t mad, 
-                                const uint64_t med);
+static 
+double remove_outliers(const size_t len, const double data[len], 
+                                double sanitized[len], const double mad, 
+                                const double med);
 
-static double average(const size_t len, const uint64_t sanitized[len]);
+static 
+double average(const size_t len, const double sanitized[len]);
 
 /* 
  * Header implementations 
  */
-double get_result(const size_t len, uint64_t data[len]) {
+double get_result(const size_t len, double data[len]) {
     // sort the data
-    uint64_t med, mad;
+    double med, mad;
     size_t sanitized_len;
-    uint64_t sanitized[len];
+    double sanitized[len];
 
     if (!len)  {
         fprintf(stderr, "data must contain at least 1 element");
         return -1;
     }
 
-    qsort(data, len, sizeof(uint64_t), cmp_uint64_t);
+    qsort(data, len, sizeof(double), cmp_double);
 
     med = median(len, data);
     mad = median_absolute_deviation(len, data, med);
@@ -45,32 +50,32 @@ double get_result(const size_t len, uint64_t data[len]) {
 /* 
  * Internal implementations 
  */
-int cmp_uint64_t(const void* a, const void* b) {
-    if (*(uint64_t*)a > *(uint64_t*)b) return 1;
-    else if (*(uint64_t*)a < *(uint64_t*)b) return -1;
+int cmp_double(const void* a, const void* b) {
+    if (*(double*)a > *(double*)b) return 1;
+    else if (*(double*)a < *(double*)b) return -1;
     else return 0;
 }
 
-inline uint64_t median(const size_t len, const uint64_t data[len]) {
+inline double median(const size_t len, const double data[len]) {
     if (len & 1ull) return data[len / 2];
     else return (data[len / 2] + data[(len + 1) / 2]) / 2;
 }
 
-uint64_t median_absolute_deviation(const size_t len, const uint64_t data[len], 
-                                   const uint64_t med) {
-    uint64_t abs_dev[len];
+double median_absolute_deviation(const size_t len, const double data[len], 
+                                   const double med) {
+    double abs_dev[len];
 
     for (size_t i = 0; i < len; ++i) {
         abs_dev[i] = data[i] > med ? data[i] - med : med - data[i];
     }
 
-    qsort(abs_dev, len, sizeof(uint64_t), cmp_uint64_t);
+    qsort(abs_dev, len, sizeof(double), cmp_double);
 
     return median(len, abs_dev);
 }
 
-uint64_t remove_outliers(const size_t len, const uint64_t data[len], uint64_t sanitized[len], 
-                         const uint64_t mad, const uint64_t med) {
+double remove_outliers(const size_t len, const double data[len], double sanitized[len], 
+                         const double mad, const double med) {
     size_t sanitized_len = 0;
     size_t range = mad * N;
 
@@ -82,10 +87,10 @@ uint64_t remove_outliers(const size_t len, const uint64_t data[len], uint64_t sa
     return sanitized_len;
 }
 
-double average(const size_t len, const uint64_t sanitized[len]) {
+double average(const size_t len, const double sanitized[len]) {
     double sum = 0;
 
-    for (size_t i = 0; i < len; ++i) sum += (double) sanitized[i];
+    for (size_t i = 0; i < len; ++i) sum +=  sanitized[i];
 
     return sum / (double) len;
 }

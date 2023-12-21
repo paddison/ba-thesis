@@ -8,7 +8,7 @@ extern "C" {
 #include <stdlib.h>
 
 
-double get_result(const size_t len, uint64_t data[len]);
+double get_result(const size_t len, double data[len]);
 
 #ifdef __cplusplus 
 }
