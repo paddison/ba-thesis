@@ -7,8 +7,8 @@
 
 include_dirs := -I ./include -I ./src -I ./src/rng_generic -I ${HOME}/.local/include
 
-CXXFLAGS := -g -std=c++11 $(include_dirs) -L ${HOME}/.local/lib
-CFLAGS := -g $(include_dirs) -L ${HOME}/.local/lib
+CXXFLAGS := -g -std=c++11 $(include_dirs) -L ${HOME}/.local/lib -pthread
+CFLAGS := -g $(include_dirs) -L ${HOME}/.local/lib -pthread
 ntl_flags := -lntl -lgmp -lgf2x
 
 # directory structure
@@ -170,6 +170,8 @@ t_verify_min_poly_xoshiro: $(rngxoshiro_obj) $(objects) $(verify_min_poly)
 # Rules for building the benachmark executables
 # =====================================================================================
 
+benchmark: CC = mpicc
+benchmark: CXX = mpicxx
 benchmark: CFLAGS += -I $(bench)
 benchmark: CXXFLAGS += -I $(bench)
 benchmark: b_jump_ahead_algorithms_64
