@@ -5,8 +5,10 @@
 # Compile Flags
 #-----------------------------------------
 
-CXXFLAGS := -g -std=c++11 -I ./include -I ./src -I ./src/rng_generic 
-CFLAGS := -g -I ./include -I ./src -I ./src/rng_generic
+include_dirs := -I ./include -I ./src -I ./src/rng_generic -I ${HOME}/.local/include
+
+CXXFLAGS := -g -std=c++11 $(include_dirs) -L ${HOME}/.local/lib
+CFLAGS := -g $(include_dirs) -L ${HOME}/.local/lib
 ntl_flags := -lntl -lgmp -lgf2x
 
 # directory structure
@@ -172,7 +174,7 @@ benchmark: CFLAGS += -I $(bench)
 benchmark: CXXFLAGS += -I $(bench)
 benchmark: b_jump_ahead_algorithms_64
 
-b_jump_ahead_algorithms_64: $(rngmt_obj) $(objects) $(build)/b_jump_ahead_algorithms.o
+b_jump_ahead_algorithms_64: $(rng64_obj) $(objects) $(build)/tools.o $(build)/b_jump_ahead_algorithms.o
 	$(CXX) $(CXXFLAGS) -O2  $^ -o $(out)/$@ $(ntl_flags)
 
 # =====================================================================================
