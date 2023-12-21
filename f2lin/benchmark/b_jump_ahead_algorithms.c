@@ -1,20 +1,34 @@
-#include "mpi.h"
+/*
+ * The purpose of this benchmark is to assess the performance of the three different 
+ * algorithms which are used to evaluate the jump polynomial: horner, sliding window
+ * and sliding window decomp.
+ * 
+ * Additionally, sliding window and sliding window decomp are also tested for different 
+ * "q" values. Q is the degree of the decomposition polynomials used in those two algorithms.
+ * Accepted values for q are in the range from 1 to 10.
+ * 1 behaves exactly as just running horners algorithm.
+ */
+
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+
+#include "mpi.h"
+
 #include "tools.h"
 #include "jump_ahead.h"
+#include "poly_decomp.h"
 #include "rng_generic/rng_generic.h"
 #include "config.h"
 #include "gf2x_wrapper.h"
 
 static
-void parse_argv(int argc, char *argv[argc], unsigned long long buf[argc - 1]) {
+void parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]) {
     // we ignore the first argument, which is the program name
-    for (size_t i = 1; i < argc; ++i) {
+    for (size_t i = 0; i < argc - 3; ++i) {
         unsigned long long n = strtoull(argv[i], 0, 10);
-        if (n != ULLONG_MAX) buf[i - 1] = n;
+        if (n != ULLONG_MAX) buf[i] = n;
     }
 }
 
@@ -30,20 +44,24 @@ GF2X* init_n_deg(size_t deg) {
 }
 
 static 
-void bla(unsigned long long jump_size, F2LinConfig* cfg, size_t iterations, size_t repetitions) {
+void exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size_t repetitions) {
     MPI_Comm comm = MPI_COMM_WORLD;
     int root = 0, rank, gsize;
     size_t rsize;
     double compute[repetitions];
     double *rbuf_compute;
+
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
-    F2LinJump* jp = f2lin_jump_ahead_init(jump_size, cfg);
+    F2LinJump* jp = f2lin_jump_ahead_init(poly_deg, cfg);
 
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &gsize);
-    printf("rank: %d\t, gsize: %d\n", rank, gsize);
 
-    jp->jump_poly = init_n_deg(jump_size);
+    free(jp->jump_poly);
+    free(jp->decomp_poly);
+
+    jp->jump_poly = init_n_deg(poly_deg);
+    jp->decomp_poly = f2lin_poly_decomp_init_from_gf2x(jp->jump_poly, jp->q);
     rsize = gsize * repetitions;
 
     for (size_t rep = 0; rep < repetitions; ++rep) {
@@ -56,109 +74,47 @@ void bla(unsigned long long jump_size, F2LinConfig* cfg, size_t iterations, size
         compute[rep] = end - start;
     }
     if (rank == root) {
+        rbuf_compute = malloc(sizeof(double) * rsize);
     }
-    //MPI_Barrier(comm);
-    rbuf_compute = malloc(sizeof(double) * rsize);
 
-    MPI_Gather(compute, repetitions, MPI_DOUBLE, rbuf_compute, rsize, MPI_DOUBLE, root, comm);
+    MPI_Gather(compute, repetitions, MPI_DOUBLE, rbuf_compute, repetitions, MPI_DOUBLE, root, comm);
 
     if (rank == root) {
-        double avg_loop, avg_compute;
-        avg_compute = get_result(rsize, rbuf_compute);
-        printf("Jump: %llu\ttime: %5.2es\n", 
-               jump_size, avg_compute);
+        double avg_loop, avg_compute = 0;
+        for (size_t i = 0; i < rsize; ++i) avg_compute += rbuf_compute[i];
+        avg_compute = get_result(rsize, rbuf_compute) / (double) iterations;
+        printf("degree of polynomial: %llu\ttime: %5.2es\n", 
+               poly_deg, avg_compute / (double) rsize);
     }
-
-    //MPI_Barrier(comm);
+    
+    //f2lin_jump_ahead_destroy(jp);
+    //f2lin_rng_generic_destroy(rng);
 }
 
 static 
-void benchmark_jump(size_t jump_size, F2LinConfig *cfg, 
-                    size_t iterations, size_t repetitions) {
-    // iterations: number of times a loop is run when collecting a sample.
-    // repetitions: the number of samples that are collected
-    volatile size_t dummy = 0;
-    int root = 0, myrank, g_size;
-    double loop[repetitions], compute[repetitions];
-    size_t rsize;
-    double *rbuf_loop, *rbuf_compute;
-    F2LinRngGeneric* rng = f2lin_rng_generic_init();
-    F2LinJump* jp = f2lin_jump_ahead_init(jump_size, cfg);
-    MPI_Comm comm = MPI_COMM_WORLD;
-    jp->jump_poly = init_n_deg(jump_size);
-    myrank = MPI_Comm_rank(comm, &myrank); 
-    g_size = MPI_Comm_size(comm, &g_size);
-    printf("rank: %d, NP: %d\n", myrank, g_size);
-    rsize = g_size * repetitions;
-
-    // measure the loop
-    for (size_t rep = 0; rep < repetitions; ++rep) {
-        // start measurement
-        double start, middle, end;
-        start = MPI_Wtime();
-        for (size_t i = 0; i < iterations; ++i) {
-            dummy = i;
-        }
-
-        middle = MPI_Wtime();
-
-        for (size_t i = 0; i < iterations; ++i) {
-            // do some heavy computation
-            f2lin_jump_ahead_jump(jp, rng);
-        }
-        end = MPI_Wtime();
-        // print something to avoid cpu optimization 
-        //printf("did repetition, %zu iterations\n", dummy);
-        loop[rep] = middle - start;
-        compute[rep] = end - middle;
-    }
-    
-    if (myrank == root) {
-        rbuf_loop = malloc(sizeof(double) * rsize);
-        rbuf_compute = malloc(sizeof(double) * rsize);
-
-    }
-    MPI_Gather(loop, repetitions, MPI_DOUBLE, 
-               rbuf_loop, rsize, MPI_DOUBLE, root, 
-               comm);
-
-    
-    MPI_Gather(compute, repetitions, MPI_DOUBLE, 
-               rbuf_compute, rsize, MPI_DOUBLE, root,
-               comm);
-
-    if (myrank == root) {
-        double avg_loop, avg_compute;
-        avg_loop = get_result(rsize, rbuf_loop);
-        avg_compute = get_result(rsize, rbuf_compute);
-        printf("Jump: %zu\ttime: %5.2es\tloop_time: %5.2ens\n", 
-               jump_size, avg_compute, avg_loop);
-    }
-}
-
-static 
-void do_benchmark(size_t n_jumps, unsigned long long jumps[n_jumps], F2LinConfig *cfg, 
+void do_benchmark(size_t n_deg, unsigned long long poly_degs[n_deg], F2LinConfig *cfg, 
                   size_t iterations, size_t repetitions) {
-
-    /*
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int rank, gsize;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &gsize);
-    */
-
-    for (size_t i = 0; i < n_jumps; ++i) {
-        //benchmark_jump(jumps[i], cfg, iterations, repetitions);
-        bla(jumps[i], cfg, iterations, repetitions);
+    for (size_t i = 0; i < n_deg; ++i) {
+        exec(poly_degs[i], cfg, iterations, repetitions);
     }
 }
 
 int main(int argc, char* argv[argc + 1]) {  
     MPI_Init(&argc, &argv);
 
-    unsigned long long buf[100];
-    size_t iterations = 100, repetitions = 100;
-    size_t n_jumps;
+    if (argc < 3) {
+        printf("Usage: mpirun -np x b_jump_ahead_algorithms iterations repetitions [deg1, deg2, ...]\n");
+        printf("Iterations: number of function calls between two time measurements\n");
+        printf("Repetitions: Number of datapoints collected per process\n");
+    }
+
+    unsigned long long buf[100] = { 0 };
+    size_t iterations = strtoull(argv[1], 0, 10), repetitions = strtoull(argv[2], 0, 10);;
+    if (iterations == ULLONG_MAX || repetitions == ULLONG_MAX) {
+        fprintf(stderr, "Got non numberical value for iterations or repetitions"); 
+        return EXIT_FAILURE;
+    }
+    size_t n_deg;
     int myrank;
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     F2LinConfig cfg = { .q = 5, .algorithm = HORNER };
@@ -168,11 +124,11 @@ int main(int argc, char* argv[argc + 1]) {
         return EXIT_FAILURE;
     }
 
-    if (argc > 1) { 
-        parse_argv(argc, argv, buf);
-        n_jumps = argc - 1;
+    if (argc > 3) { 
+        parse_argv(argc, &argv[3], buf);
+        n_deg = argc - 3;
     } else {
-        n_jumps = 10; 
+        n_deg = 10; 
         buf[0] = 1;
         buf[1] = 16;
         buf[2] = 64;
@@ -190,20 +146,26 @@ int main(int argc, char* argv[argc + 1]) {
     if (myrank == 0) {
         printf("horner:\n");
     }
-    do_benchmark(n_jumps, buf, &cfg, iterations, repetitions);
+    do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
 
-    cfg.algorithm = SLIDING_WINDOW;
-    if (myrank == 0) {
-        printf("sliding window:\n");
-    }
-    do_benchmark(n_jumps, buf, &cfg, iterations, repetitions);
+    for (size_t q = 1; q < 11; ++q) {
+        cfg.q = q;
+        cfg.algorithm = SLIDING_WINDOW;
+        if (myrank == 0) {
+            printf("=========================================\nQ: %zu\n", q);
+            printf("sliding window\n");
+        }
+        do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
 
-    cfg.algorithm = SLIDING_WINDOW_DECOMP;
-    if (myrank == 0) {
-        printf("sliding window decomp:\n");
+        cfg.algorithm = SLIDING_WINDOW_DECOMP;
+        if (myrank == 0) {
+            printf("sliding window decomp\n");
+        }
+
+        do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
     }
-    do_benchmark(n_jumps, buf, &cfg, iterations, repetitions);
 
     MPI_Finalize();
+
     return EXIT_SUCCESS;
 }
