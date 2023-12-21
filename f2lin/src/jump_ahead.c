@@ -52,7 +52,6 @@ F2LinJump* f2lin_jump_ahead_init(size_t jump_size, F2LinConfig* cfg) {
     // initialize jump and decomposition polynomials
     jump_params->decomp_poly = f2lin_poly_decomp_init_from_gf2x(jump_params->jump_poly, jump_params->q);
     GF2X_zero_destroy(min_poly);
-    //GF2X_print(jump_params->jump_poly);
     return jump_params;
 }
 
@@ -209,7 +208,7 @@ static F2LinRngGeneric* horner_sliding_window(int Q, F2LinRngGeneric* rng, const
     // NTL polynomials should always start with the first non zero component
     //assert(GF2X_coeff(jump_poly, i) == 1);
 
-    if (i >= (Q + 1)) {
+    if (i >= (Q)) {
         //; h1(A) * x, first component in horner's method
         f2lin_rng_generic_copy(tmp, h[f2lin_determine_gray_enumeration(Q, i, jump_poly)]);
 
