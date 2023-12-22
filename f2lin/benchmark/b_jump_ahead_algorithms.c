@@ -13,15 +13,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "mpi.h"
 
 #include "tools.h"
+#include "bench.h"
 #include "jump_ahead.h"
 #include "poly_decomp.h"
 #include "rng_generic/rng_generic.h"
 #include "config.h"
 #include "gf2x_wrapper.h"
+
+int grank;
+
+#define DEBUG_WAIT(a)                                                   \
+  if(a) {                                                               \
+    printf("Rank-%d: pid= %d\n", grank, getpid()); fflush(stdout);      \
+    int temp_inside= -1;                                                \
+    if(0== grank) {                                                     \
+      if(1!= scanf("%d", &temp_inside)) { temp_inside= 0; }             \
+    }                                                                   \
+    MPI_Bcast(&temp_inside, 1, MPI_INT, 0, MPI_COMM_WORLD);                      \
+  }
 
 static
 void parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]) {
@@ -32,37 +46,22 @@ void parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]
     }
 }
 
-static
-GF2X* init_n_deg(size_t deg) {
-    GF2X* p = GF2X_zero_init();
-    F2LinRngGeneric* rng = f2lin_rng_generic_init();
-    for (size_t i = 0; i < deg; ++i) {
-        GF2X_SetCoeff(p, i, f2lin_rng_generic_gen64(rng) & 1ull);
-    }
-
-    return p;
-}
-
 static 
 void exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size_t repetitions) {
-    MPI_Comm comm = MPI_COMM_WORLD;
-    int root = 0, rank, gsize;
-    size_t rsize;
-    double compute[repetitions];
-    double *rbuf_compute;
+    double avg;
+    F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
 
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
     F2LinJump* jp = f2lin_jump_ahead_init(poly_deg, cfg);
 
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &gsize);
+    GF2X_zero_destroy(jp->jump_poly);
+    
+    jp->jump_poly = f2lin_tools_n_deg_poly_random(poly_deg);
 
-    free(jp->jump_poly);
-    free(jp->decomp_poly);
-
-    jp->jump_poly = init_n_deg(poly_deg);
-    jp->decomp_poly = f2lin_poly_decomp_init_from_gf2x(jp->jump_poly, jp->q);
-    rsize = gsize * repetitions;
+    if (cfg->algorithm != HORNER) {
+        f2lin_poly_decomp_destroy(jp->decomp_poly);
+        jp->decomp_poly = f2lin_poly_decomp_init_from_gf2x(jp->jump_poly, jp->q);
+    }
 
     for (size_t rep = 0; rep < repetitions; ++rep) {
         double start, end;
@@ -71,24 +70,19 @@ void exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size
             f2lin_jump_ahead_jump(jp, rng);
         }
         end = MPI_Wtime();
-        compute[rep] = end - start;
-    }
-    if (rank == root) {
-        rbuf_compute = malloc(sizeof(double) * rsize);
+        f2lin_bench_bmpi_update(&bmpi, rep, end - start);
     }
 
-    MPI_Gather(compute, repetitions, MPI_DOUBLE, rbuf_compute, repetitions, MPI_DOUBLE, root, comm);
+    avg = f2lin_bench_bmpi_eval(&bmpi);
 
-    if (rank == root) {
-        double avg_loop, avg_compute = 0;
-        for (size_t i = 0; i < rsize; ++i) avg_compute += rbuf_compute[i];
-        avg_compute = get_result(rsize, rbuf_compute) / (double) iterations;
+    if (bmpi.rank == bmpi.root) {
         printf("degree of polynomial: %llu\ttime: %5.2es\n", 
-               poly_deg, avg_compute / (double) rsize);
+               poly_deg, avg / (double) iterations);
     }
     
-    //f2lin_jump_ahead_destroy(jp);
-    //f2lin_rng_generic_destroy(rng);
+    f2lin_jump_ahead_destroy(jp);
+    f2lin_rng_generic_destroy(rng);
+    f2lin_bench_bmpi_destroy(&bmpi);
 }
 
 static 
@@ -115,8 +109,9 @@ int main(int argc, char* argv[argc + 1]) {
         return EXIT_FAILURE;
     }
     size_t n_deg;
-    int myrank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+
+    DEBUG_WAIT(0);
     F2LinConfig cfg = { .q = 5, .algorithm = HORNER };
 
     if (argc > 100) {
@@ -138,27 +133,25 @@ int main(int argc, char* argv[argc + 1]) {
         buf[6] = 2048;
         buf[7] = 4096;
         buf[8] = 8192;
-        buf[9] = 16384;
-        buf[9] = 32768;
-
+        buf[9] = 19937;
     }
 
-    if (myrank == 0) {
+    if (grank == 0) {
         printf("horner:\n");
     }
     do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
 
-    for (size_t q = 1; q < 11; ++q) {
+    for (size_t q = 1; q <= 10; ++q) {
         cfg.q = q;
         cfg.algorithm = SLIDING_WINDOW;
-        if (myrank == 0) {
+        if (grank == 0) {
             printf("=========================================\nQ: %zu\n", q);
             printf("sliding window\n");
         }
         do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
 
         cfg.algorithm = SLIDING_WINDOW_DECOMP;
-        if (myrank == 0) {
+        if (grank == 0) {
             printf("sliding window decomp\n");
         }
 
