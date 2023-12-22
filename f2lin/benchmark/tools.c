@@ -1,5 +1,7 @@
 #include "tools.h"
 #include <stdio.h>
+#include "gf2x_wrapper.h"
+#include "rng_generic/rng_generic.h"
 
 #define N 2
 
@@ -27,7 +29,7 @@ double average(const size_t len, const double sanitized[len]);
 /* 
  * Header implementations 
  */
-double get_result(const size_t len, double data[len]) {
+double f2lin_tools_get_result(const size_t len, double data[len]) {
     // sort the data
     double med, mad;
     size_t sanitized_len;
@@ -45,6 +47,20 @@ double get_result(const size_t len, double data[len]) {
     sanitized_len = remove_outliers(len, data, sanitized, mad, med);
 
     return average(sanitized_len, sanitized);
+}
+
+GF2X* f2lin_tools_n_deg_poly_random(size_t deg) {
+    GF2X* p = GF2X_zero_init();
+
+    F2LinRngGeneric* rng = f2lin_rng_generic_init();
+    GF2X_SetCoeff(p, 0, 1);
+    GF2X_SetCoeff(p, deg, 1);
+    for (size_t i = 1; i < deg; ++i) {
+        GF2X_SetCoeff(p, i, f2lin_rng_generic_gen64(rng) & 1ull);
+    }
+
+    f2lin_rng_generic_destroy(rng);
+    return p;
 }
 
 /* 
