@@ -37,15 +37,16 @@ void f2lin_poly_decomp_destroy(F2LinPolyDecomp* decomp_poly) {
     decomp_poly->params = 0;
     decomp_poly->cap = 0;
     decomp_poly->hm1 = 0;
+    free(decomp_poly);
+    decomp_poly = 0;
 }
 
 /* Internal impolementations */
 static F2LinPolyDecomp* f2lin_poly_decomp_init(size_t q, size_t deg) {
     F2LinPolyDecomp* poly_decomp = calloc(sizeof(F2LinPolyDecomp), 1);
-    //F2LinPolyDecomp poly_decomp = { 0 };
     
     poly_decomp->cap = deg > q ? deg / q : 16;
-    poly_decomp->params = (F2LinPolyDecompParam *) malloc(sizeof(F2LinPolyDecompParam) * poly_decomp->cap);
+    poly_decomp->params = (F2LinPolyDecompParam *) calloc(sizeof(F2LinPolyDecompParam),  poly_decomp->cap);
 
     return poly_decomp;
 }

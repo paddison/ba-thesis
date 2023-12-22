@@ -3,8 +3,11 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
+
 #include <inttypes.h>
 #include "gf2x_wrapper.h"
+
 
 static inline size_t f2lin_determine_gray_enumeration(const size_t q, const size_t i, const GF2X* poly) {
     size_t gray_enumeration = 0;

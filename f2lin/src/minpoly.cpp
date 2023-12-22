@@ -33,7 +33,7 @@ static void f2lin_init_min_poly(NTL::GF2X& p_min) {
 // Note that the string is NOT null terminated
 static char* f2lin_minpoly_to_string(NTL::GF2X& p_min) {
     int deg = NTL::deg(p_min);
-    char* buf = (char*) malloc(sizeof(char) * deg);
+    char* buf = (char*) calloc(sizeof(char), deg);
 
     for (int i = deg; i >= 0; --i) { 
         NTL::coeff(p_min, i) == 1 ? buf[i] = '1' : buf[i] = '0';
