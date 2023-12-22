@@ -7,8 +7,8 @@
 
 include_dirs := -I ./include -I ./src -I ./src/rng_generic -I ${HOME}/.local/include
 
-CXXFLAGS := -g -std=c++11 $(include_dirs) -L ${HOME}/.local/lib -pthread
-CFLAGS := -g $(include_dirs) -L ${HOME}/.local/lib -pthread
+CXXFLAGS := -std=c++11 $(include_dirs) -L ${HOME}/.local/lib -pthread
+CFLAGS := $(include_dirs) -L ${HOME}/.local/lib -pthread
 ntl_flags := -lntl -lgmp -lgf2x
 
 # directory structure
@@ -27,6 +27,10 @@ bench := benchmark
 sources := gf2x_wrapper.cpp jump_ahead.c poly_decomp.c f2lin.c
 objects := $(patsubst %.c, $(build)/%.o, $(sources))
 objects := $(patsubst %.cpp, $(build)/%.o, $(objects))
+
+# object files needed for benchmarks
+bench_src := bench.c tools.c
+bench_obj := $(patsubst %.c, $(build)/%.o, $(bench_src))
 
 # object files for random number generators
 #-----------------------------------------
@@ -172,12 +176,19 @@ t_verify_min_poly_xoshiro: $(rngxoshiro_obj) $(objects) $(verify_min_poly)
 
 benchmark: CC = mpicc
 benchmark: CXX = mpicxx
+benchmark: opt_flag := -O2
 benchmark: CFLAGS += -I $(bench)
 benchmark: CXXFLAGS += -I $(bench)
-benchmark: b_jump_ahead_algorithms_64
+benchmark: b_jump_ahead_algorithms_64 b_poly_decomp b_jump_ahead_init_jump_poly
 
-b_jump_ahead_algorithms_64: $(rng64_obj) $(objects) $(build)/tools.o $(build)/b_jump_ahead_algorithms.o
-	$(CXX) $(CXXFLAGS) -O2  $^ -o $(out)/$@ $(ntl_flags)
+b_jump_ahead_algorithms_64: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
+b_poly_decomp: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_poly_decomp.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
+b_jump_ahead_init_jump_poly: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_jump_ahead_init_jump_poly.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
 
 # =====================================================================================
 # Building header files which contain the minimal polynomial of each respective rng
