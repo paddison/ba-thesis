@@ -9,8 +9,8 @@
 #include <stdlib.h>
 
 #include "minunit.h"
-#include "prand48.c"
 #include "prand48.h"
+#include "prand48.c"
 
 int tests_run = 0;
 
@@ -55,12 +55,12 @@ static char* test_seek_equals_iterate() {
     
     uint16_t iter[3] = { 0 };
     uint16_t seek[3] = { 0 };
-    prand48_seek(iter, 0);
-    prand48_seek(seek, 0);
+    prand48_jump(iter, 0);
+    prand48_jump(seek, 0);
     // compare the first ten million numbers 
     for (uint64_t i = 1; i < 10000000; ++i) {
         __prand_next(iter);
-        prand48_seek(seek, i);
+        prand48_jump(seek, i);
 
         mu_assert("iterate and seek generate different numbers", 
                    iter[0] == seek[0] && 
@@ -76,7 +76,7 @@ static char* test_pdrand_equals_drand() {
     uint16_t n[3] = { 0 };
     seed48((uint16_t[3]) { 0x1234, 0xabcd, 0x330e });
 
-    prand48_seek(n, 0);
+    prand48_jump(n, 0);
 
     for (uint64_t i = 1; i < 100; ++i) {
         double prand = pdrand48(n);
@@ -93,7 +93,7 @@ static char* test_plrand_equals_lrand() {
     uint16_t n[3] = { 0 };
     seed48((uint16_t[3]) { 0x1234, 0xabcd, 0x330e });
 
-    prand48_seek(n, 0);
+    prand48_jump(n, 0);
 
     for (uint64_t i = 1; i < 100; ++i) {
         uint32_t prand = plrand48(n);
@@ -110,7 +110,7 @@ static char* test_pmrand_equals_mrand() {
     uint16_t n[3] = { 0 };
     seed48((uint16_t[3]) { 0x1234, 0xabcd, 0x330e });
 
-    prand48_seek(n, 0);
+    prand48_jump(n, 0);
 
     for (uint64_t i = 1; i < 100; ++i) {
         uint32_t prand = pmrand48(n);

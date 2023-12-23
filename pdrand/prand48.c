@@ -180,7 +180,7 @@ void prand48_init_man(uint16_t seed[3], uint64_t a, uint16_t c) {
     state.init = true;
 }
 
-void prand48_seek(uint16_t buf[3], uint64_t n) {
+void prand48_jump(uint16_t buf[3], uint64_t n) {
     if (!state.init) {
         fprintf(stderr, "Need to initialize before calling seek()\n");
         return;

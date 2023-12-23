@@ -95,7 +95,7 @@ void prand48_init_man(uint16_t seed[3], uint64_t a, uint16_t c);
  * will be stored in @a buf, which can be seen as the thread local state
  * of the rng.
  */
-void prand48_seek(uint16_t buf[3], uint64_t n);
+void prand48_jump(uint16_t buf[3], uint64_t n);
 
 /**
  * @brief Calculate the next random number. This will update @a buf.
