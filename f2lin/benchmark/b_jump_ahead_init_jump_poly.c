@@ -24,11 +24,11 @@ struct data {
 };
 
 static
-void write_results(size_t N, data results[N]) {
+void write_results(char exec_name[static 1], size_t N, data results[N]) {
     char* fname;
     FILE* f;
 
-    asprintf(&fname, "jump_ahead_init_jump_poly.csv");
+    asprintf(&fname, "%s.csv", exec_name);
     f = fopen(fname, "a");
 
     for (size_t i = 0; i < N; ++i) {
@@ -162,7 +162,7 @@ int main(int argc, char* argv[argc + 1]) {
         }
     }
 
-    if (rank == 0) write_results(N_DEG * N_JUMPS, result);
+    if (rank == 0) write_results(argv[0], N_DEG * N_JUMPS, result);
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

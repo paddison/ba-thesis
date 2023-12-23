@@ -50,30 +50,25 @@ struct data {
 };
 
 static
-void write_results(size_t N, unsigned long long buf[N], data results[N]) {
+void write_results(char exec_name[static 1], size_t N, unsigned long long buf[N], data results[N]) {
         char* fname;
         FILE* f;
 
-        asprintf(&fname, "jump_ahead_algorithms.csv");
+        asprintf(&fname, "%s.csv", exec_name);
 
         f = fopen(fname, "a");
-        fprintf(f, "deg,horner,\
-sw1,sw2,sw3,sw4,sw5,sw6,sw7,sw8,sw9,sw10,\
-swd1,swd2,swd3,swd4,swd5,swd6,swd7,swd8,swd9,swd10\n");
+        fprintf(f, "deg,horner,");
+        for (size_t i = 1; i <= 10; ++i) fprintf(f, "sw%zu,", i);
+        fprintf(f, "\n");
 
         for (size_t i = 0; i < N; ++i) {
-            fprintf(f, "%llu,%5.2e,\
-%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,\
-%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e\n",
-                    buf[i], results[i].h,
-                    results[i].sw[0],results[i].sw[1],results[i].sw[2],results[i].sw[3],results[i].sw[4],
-                    results[i].sw[5],results[i].sw[6],results[i].sw[7],results[i].sw[8],results[i].sw[9],
-                    results[i].swd[0],results[i].swd[1],results[i].swd[2],results[i].swd[3],results[i].swd[4],
-                    results[i].swd[5],results[i].swd[6],results[i].swd[7],results[i].swd[8],results[i].swd[9]);
+            fprintf(f, "%llu,%5.2e,", buf[i], results[i].h);
+            for (size_t j = 0; j < 10; ++j) fprintf(f, "%5.2e,", results[i].sw[j]);
+            for (size_t j = 0; j < 10; ++j) fprintf(f, "%5.2e,", results[i].swd[j]);
+            fprintf(f, "\n");
         }
         fclose(f);
         free(fname);
-
 }
 
 static 
@@ -174,7 +169,7 @@ int main(int argc, char* argv[argc + 1]) {
     }
 
     /* write the results */
-    if (grank == 0) write_results(n_deg, buf, results);
+    if (grank == 0) write_results(argv[0], n_deg, buf, results);
 
     MPI_Finalize();
 

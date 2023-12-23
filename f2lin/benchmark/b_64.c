@@ -20,11 +20,11 @@ uint64_t next(uint64_t state) {
 }
 
 static
-void write_results(size_t N, unsigned long long buf[N], double results[N]) {
+void write_results(char exec_name[static 1], size_t N, unsigned long long buf[N], double results[N]) {
     char* fname;
     FILE* f;
 
-    asprintf(&fname, "b_64.csv");
+    asprintf(&fname, "%s.csv", exec_name);
     f = fopen(fname, "a");
     fprintf(f, "n_numbers,time\n");
 
@@ -89,7 +89,7 @@ int main(int argc, char* argv[argc + 1]) {
         if (rank == 0) printf("jump: %llu\ttime: %5.2e\n", buf[i], avg);
     }
 
-    if (rank == 0) write_results(n_args, buf, results);
+    if (rank == 0) write_results(argv[0], n_args, buf, results);
 
     MPI_Finalize();
     return EXIT_SUCCESS;

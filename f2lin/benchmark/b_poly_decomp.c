@@ -24,11 +24,11 @@ struct data {
 };
 
 static
-void write_results(size_t N, unsigned long long degs[N], data results[N]) {
+void write_results(char exec_name[static 1], size_t N, unsigned long long degs[N], data results[N]) {
         char* fname;
         FILE* f;
 
-        asprintf(&fname, "b_poly_decomp.csv");
+        asprintf(&fname, "%s.csv", exec_name);
         f = fopen(fname, "a");
         fprintf(f, "deg,2,3,4,5,6,7,8,9,10\n");
 
@@ -39,6 +39,8 @@ void write_results(size_t N, unsigned long long degs[N], data results[N]) {
             for (size_t j = 0; j < 9; ++j) {
                 fprintf(f, "%5.2e,", d[j]);
             }
+            fprintf(f, "\n");
+
         }
         fclose(f);
         free(fname);
@@ -106,7 +108,7 @@ int main(int argc, char* argv[argc + 1]) {
     }
 
     /* write the result to file */
-    if (rank == 0) write_results(N_DEGS, degs, results);
+    if (rank == 0) write_results(argv[0], N_DEGS, degs, results);
 
     MPI_Finalize();
     return EXIT_SUCCESS;

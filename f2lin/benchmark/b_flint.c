@@ -19,6 +19,26 @@ struct data {
     double jp;
 };
 
+static 
+void write_results(char exec_name[static 1], size_t N, unsigned long long jumps[N], 
+                   data results[N], double minpoly, double seq) {
+    char* fname;
+    FILE* f;
+
+    asprintf(&fname, "%s.csv", exec_name);
+    f = fopen(fname, "a");
+    fprintf(f, "jump,alloc,jumppoly\n");
+
+    for (size_t i = 0; i < N; ++i) {
+        fprintf(f, "%llu,%5.2e,%5.2e\n", jumps[i], results[i].init, results[i].jp);
+    }
+
+    fprintf(f, "state_size,minpoly,minpoly_seq\n");
+    fprintf(f, "%zu,%5.2e,%5.2e\n", f2lin_rng_generic_state_size(), minpoly, seq);
+    fclose(f);
+    free(fname);
+}
+
 static
 void init_p_min(nmod_berlekamp_massey_t B) {
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
@@ -182,26 +202,6 @@ double benchmark_jump_polynomial(size_t iterations, size_t repetitions, size_t j
     return avg;
 }
 
-static 
-void write_results(size_t N, unsigned long long jumps[N], 
-                   data results[N], double minpoly, double seq) {
-    char* fname;
-    FILE* f;
-
-    asprintf(&fname, "b_flint_%zu.csv", f2lin_rng_generic_state_size());
-    f = fopen(fname, "a");
-    fprintf(f, "jump,alloc,jumppoly\n");
-
-    for (size_t i = 0; i < N; ++i) {
-        fprintf(f, "%llu,%5.2e,%5.2e\n", jumps[i], results[i].init, results[i].jp);
-    }
-
-    fprintf(f, "state_size,minpoly,minpoly_seq\n");
-    fprintf(f, "%zu,%5.2e,%5.2e\n", f2lin_rng_generic_state_size(), minpoly, seq);
-    fclose(f);
-    free(fname);
-}
-
 int main(int argc, char* argv[argc + 1]) {
     MPI_Init(&argc, &argv);
     size_t iterations, repetitions, n_jumps = argc - 3;
@@ -234,7 +234,7 @@ int main(int argc, char* argv[argc + 1]) {
     if (rank == 0) { 
         printf("state size: %zu\tminpoly: %5.2e\tminpoly_seq: %5.2e\n",
                 f2lin_rng_generic_state_size(), minpoly, seq);
-        write_results(n_jumps, jumps, results, minpoly, seq);
+        write_results(argv[0], n_jumps, jumps, results, minpoly, seq);
     }
 
     MPI_Finalize();

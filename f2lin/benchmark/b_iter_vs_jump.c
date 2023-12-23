@@ -18,6 +18,25 @@ struct data {
 };
 
 static
+void write_results(char exec_name[static 1], size_t N, 
+                   unsigned long long jumps[N], data results[N]) {
+    char* fname;
+    FILE* f;
+
+    asprintf(&fname, "%s.csv", exec_name);
+    f = fopen(fname, "a");
+    fprintf(f, "jump,jump_with_init,jump_no_init,iterative\n");
+
+    for (size_t i = 0; i < N; ++i) {
+        data p = results[i];
+        fprintf(f, "%llu,%5.2e,%5.2e,%5.2e\n", jumps[i], p.ji, p.jni, p.iter);
+
+    }
+    fclose(f);
+    free(fname);
+}
+
+static
 double bench_iter(size_t iterations, size_t repetitions, unsigned long long jump_size) {
     F2LinRngGeneric* rng = f2lin_rng_init(); 
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
@@ -97,24 +116,6 @@ double bench_jump_with_init(size_t iterations, size_t repetitions, unsigned long
     return avg;
 }
 
-static
-void write_results(size_t N, unsigned long long jumps[N], data results[N]) {
-    char* fname;
-    FILE* f;
-
-    asprintf(&fname, "b_iter_vs_jump.csv");
-    f = fopen(fname, "a");
-    fprintf(f, "jump,jump_with_init,jump_no_init,iterative\n");
-
-    for (size_t i = 0; i < N; ++i) {
-        data p = results[i];
-        fprintf(f, "%llu,%5.2e,%5.2e,%5.2e\n", jumps[i], p.ji, p.jni, p.iter);
-
-    }
-    fclose(f);
-    free(fname);
-}
-
 int main(int argc, char* argv[argc + 1]) {
     MPI_Init(&argc, &argv);
 
@@ -144,7 +145,7 @@ int main(int argc, char* argv[argc + 1]) {
                               buf[i], results[i].ji, results[i].jni, results[i].iter);
     }
 
-    if (rank == 0) write_results(n_jumps, buf, results);
+    if (rank == 0) write_results(argv[0], n_jumps, buf, results);
 
     MPI_Finalize();
     return EXIT_SUCCESS;

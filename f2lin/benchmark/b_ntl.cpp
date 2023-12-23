@@ -13,12 +13,12 @@
 using namespace NTL;
 
 static 
-void write_results(size_t N, unsigned long long *jumps, double *results, 
+void write_results(char* exec_name, size_t N, unsigned long long *jumps, double *results, 
                    double minpoly, double minpoly_seq) {
     char* fname;
     FILE* f;
 
-    asprintf(&fname, "b_ntl_%zu.csv", f2lin_rng_generic_state_size());
+    asprintf(&fname, "%s.csv", exec_name);
     f = fopen(fname, "a");
     fprintf(f, "jump,jumppoly\n");
 
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
     if (rank == 0) {
         printf("statesize: %zu\tminpoly:%5.2e\tminpoly_seq:%5.2e\n", 
                 f2lin_rng_generic_state_size(), minpoly, minpoly_seq);
-        write_results(n_jumps, jumps, results, minpoly, minpoly_seq);
+        write_results(argv[0], n_jumps, jumps, results, minpoly, minpoly_seq);
     }
     MPI_Finalize();
     return EXIT_SUCCESS;
