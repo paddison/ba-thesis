@@ -24,6 +24,7 @@
 #include "rng_generic/rng_generic.h"
 #include "config.h"
 #include "gf2x_wrapper.h"
+#include "poly_rand.h"
 
 int grank;
 
@@ -56,7 +57,7 @@ void exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size
 
     GF2X_zero_destroy(jp->jump_poly);
     
-    jp->jump_poly = f2lin_tools_n_deg_poly_random(poly_deg);
+    jp->jump_poly = f2lin_poly_rand_init(poly_deg);
 
     if (cfg->algorithm != HORNER) {
         f2lin_poly_decomp_destroy(jp->decomp_poly);

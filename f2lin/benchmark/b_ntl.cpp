@@ -1,81 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "flint/flint.h"
+#include "NTL/tools.h"
 #include "mpi.h"
-#include "flint/nmod_types.h"
-#include "flint/fmpz.h"
-#include "flint/nmod_poly.h"
-#include "flint/fmpz_mod.h"
-#include "flint/fmpz_mod_poly.h"
+#include "NTL/GF2X.h"
 
 #include "rng_generic/rng_generic.h"
 #include "bench.h"
 #include "tools.h"
 
+using namespace NTL;
+
 static
-void init_p_min(nmod_berlekamp_massey_t B) {
+GF2X init_p_min() {
+    const int state_size = f2lin_rng_generic_state_size();
+    const size_t seq_len = 2 * state_size ;
+
+    GF2X p_min;
+    vec_GF2 seq(NTL::INIT_SIZE, seq_len);
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
-    size_t state_size = f2lin_rng_generic_state_size();
-    mp_limb_t a[state_size * 2];
-    
-    for (size_t i = 0; i < state_size * 2; ++i) {
-        a[i] = f2lin_rng_generic_next_state(rng) & 0x01ul;
+
+    for (size_t i = 0; i < seq_len; ++i) {
+        seq[i] = f2lin_rng_generic_next_state(rng) & 0x01ul;
     }
 
-    nmod_berlekamp_massey_add_points(B, a, state_size);
-    nmod_berlekamp_massey_reduce(B);
+    NTL::MinPolySeq(p_min, seq, state_size);
+    f2lin_rng_generic_destroy(rng);
+    return p_min;
 }
 
 static
-void init_p_jump(const nmod_poly_t p_min, size_t jump) {
-    nmod_poly_t base;
-    nmod_poly_t p_jump;
-    nmod_poly_init(base, 2);
-    nmod_poly_init(p_jump, 2);
+void init_p_jump(const GF2X p_min, size_t jump) {
+    GF2X p_jump;
+    GF2X x(INIT_MONO, 1);
+    GF2XModulus p_min_mod;
 
-    nmod_poly_set_coeff_ui(base, 1, 1);
-    nmod_poly_powmod_ui_binexp(p_jump, base, jump, p_min);
-
-    nmod_poly_clear(base);
-    nmod_poly_clear(p_jump);
-}
-
-static
-void init_p_min_fmpz(fmpz_mod_poly_t poly) {
-    F2LinRngGeneric* rng = f2lin_rng_generic_init();
-    size_t state_size = f2lin_rng_generic_state_size();
-    fmpz_mod_ctx_t ctx;
-    fmpz mod = 2;
-    fmpz seq[state_size];
-
-    fmpz_mod_ctx_init(ctx, &mod);
-
-    for (size_t i = 0; i < state_size; ++i) {
-        f2lin_rng_generic_next_state(rng);
-        seq[i] = f2lin_rng_generic_gen64(rng) & 0x01ul;
-    }
-    fmpz_mod_poly_minpoly(poly, seq, state_size, ctx);
+    build(p_min_mod, p_min);
+    PowerMod(p_jump, x, jump, p_min_mod);
 }
 
 static
 void benchmark_minimal_polynomial(size_t iterations, size_t repetitions) {
-    nmod_berlekamp_massey_t B[iterations];
     F2LinBMPI init_p_min_data = f2lin_bench_bmpi_init(repetitions);
     F2LinBMPI seq_data = f2lin_bench_bmpi_init(repetitions);
 
     double times[3];
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
     size_t state_size = f2lin_rng_generic_state_size();
-    mp_limb_t seq[state_size * 2];
+    vec_GF2 seq(NTL::INIT_SIZE, state_size * 2);
  
 
     for (size_t rep = 0; rep < repetitions; ++rep) {
-        // initialize
-        for (size_t i = 0; i < iterations; ++i) { 
-            nmod_berlekamp_massey_init(B[i], 2);
-        }
-
         times[0] = MPI_Wtime();
         // measure how long it takes to collect data for state
         for (size_t i = 0; i < iterations; ++i) {
@@ -85,14 +60,9 @@ void benchmark_minimal_polynomial(size_t iterations, size_t repetitions) {
         }
         times[1] = MPI_Wtime();
         for (size_t i = 0; i < iterations; ++i) {
-            init_p_min(B[i]);
+            init_p_min();
         }
         times[2] = MPI_Wtime();
-
-        // free memory
-        for (size_t i = 0; i < iterations; ++i) {
-            nmod_berlekamp_massey_clear(B[i]);
-        }
 
         f2lin_bench_bmpi_update(&seq_data, rep, times[1] - times[0]);
         f2lin_bench_bmpi_update(&init_p_min_data, rep, times[2] - times[1]);
@@ -106,43 +76,32 @@ void benchmark_minimal_polynomial(size_t iterations, size_t repetitions) {
                state_size, seq_avg, init_p_min_avg);
     }
 
+    f2lin_rng_generic_destroy(rng);
 }
 
 static 
 void benchmark_jump_polynomial(size_t iterations, size_t repetitions, size_t jump) {
-    nmod_berlekamp_massey_t B;
-    F2LinBMPI init_data = f2lin_bench_bmpi_init(repetitions);
     F2LinBMPI jump_data = f2lin_bench_bmpi_init(repetitions);
-    double times[3];
-    nmod_berlekamp_massey_init(B, 2);
-    init_p_min(B);
+    double times[2];
+    const GF2X p_min = init_p_min();
 
     for (size_t rep = 0; rep < repetitions; ++rep) {
-        nmod_poly_t dummy;
         times[0] = MPI_Wtime();
-        // measure how long initialization takes
-        for (size_t i = 0; i < iterations; ++i) {
-            nmod_poly_init(dummy, 2);
-            nmod_poly_clear(dummy);
-        }
-        times[1] = MPI_Wtime();
         // measure time it takes to calculate jump polynomial
         for (size_t i = 0; i < iterations; ++i) {
-            init_p_jump(nmod_berlekamp_massey_V_poly(B), jump);
+            init_p_jump(p_min, jump);
         }
-        times[2] = MPI_Wtime();
+        times[1] = MPI_Wtime();
         
-        f2lin_bench_bmpi_update(&init_data, rep, times[1] - times[0]);
-        f2lin_bench_bmpi_update(&jump_data, rep, times[2] - times[1]);
+        f2lin_bench_bmpi_update(&jump_data, rep, times[1] - times[0]);
     }
 
 
-    double init_avg = f2lin_bench_bmpi_eval(&init_data) / (double) iterations;
     double jump_avg = f2lin_bench_bmpi_eval(&jump_data) / (double) iterations;
 
-    if (init_data.rank == init_data.root) {
-        printf("jump_size: %zu\t allocations: %5.2e\tjump_poly: %5.2e\n",
-               jump, init_avg, jump_avg);
+    if (jump_data.rank == jump_data.root) {
+        printf("jump_size: %zu\t jump_poly: %5.2e\n",
+               jump, jump_avg);
     }
 }
 

@@ -29,7 +29,7 @@ objects := $(patsubst %.c, $(build)/%.o, $(sources))
 objects := $(patsubst %.cpp, $(build)/%.o, $(objects))
 
 # object files needed for benchmarks
-bench_src := bench.c tools.c
+bench_src := bench.c tools.c 
 bench_obj := $(patsubst %.c, $(build)/%.o, $(bench_src))
 
 # object files for random number generators
@@ -55,7 +55,7 @@ rngxoshiro_obj   := $(patsubst %.c, $(build)/%.o, $(rngxoshiro))
 #-----------------------------------------
 
 vpath %.c src:src/rng_generic:src/lib/mt:src/lib/tinymt:test:benchmark
-vpath %.cpp src
+vpath %.cpp src:benchmark
 vpath %.o build
 vpath %.h include src
 
@@ -179,16 +179,41 @@ benchmark: CXX = mpicxx
 benchmark: opt_flag := -O2
 benchmark: CFLAGS += -I $(bench)
 benchmark: CXXFLAGS += -I $(bench)
-benchmark: b_jump_ahead_algorithms_64 b_poly_decomp b_jump_ahead_init_jump_poly
+benchmark: b_jump_ahead_algorithms_64 \
+	       b_poly_decomp b_jump_ahead_init_jump_poly \
+		   b_flint_64 b_flint_tinymt b_flint_mt \
+		   b_ntl_64 b_ntl_tinymt b_ntl_mt
 
-b_jump_ahead_algorithms_64: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o
+b_jump_ahead_algorithms_64: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
 
-b_poly_decomp: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_poly_decomp.o
+b_poly_decomp: $(rng64_obj) $(objects) $(build)/poly_rand.o $(bench_obj) $(build)/b_poly_decomp.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
 
-b_jump_ahead_init_jump_poly: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_jump_ahead_init_jump_poly.o
+b_jump_ahead_init_jump_poly: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_init_jump_poly.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
+b_flint_64: $(rng64_obj) $(bench_obj) $(build)/b_flint.o
+	$(CC) $(CCFLAGS) $(opt_flag) $^ -o $(out)/$@ -lflint
+
+b_flint_tinymt: $(rngtinymt_obj) $(bench_obj) $(build)/b_flint.o
+	$(CC) $(CCFLAGS) $(opt_flag) $^ -o $(out)/$@ -lflint
+
+b_flint_mt: $(rngmt_obj) $(bench_obj) $(build)/b_flint.o
+	$(CC) $(CCFLAGS) $(opt_flag) $^ -o $(out)/$@ -lflint
+
+b_ntl_64: $(rng64_obj) $(bench_obj) $(build)/b_ntl.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
+b_ntl_tinymt: $(rngtinymt_obj) $(bench_obj) $(build)/b_ntl.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
+b_ntl_mt: $(rngmt_obj) $(bench_obj) $(build)/b_ntl.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
+b_iter_vs_jump_64: $(rng64_obj) $(objects) $(bench_obj) $(build)/b_iter_vs_jump.o
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+
 
 # =====================================================================================
 # Building header files which contain the minimal polynomial of each respective rng

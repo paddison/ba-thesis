@@ -1,8 +1,13 @@
 #ifndef BENCH_H
 #define BENCH_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif  
+
 #include <stdlib.h>
 #include <limits.h>
+
 
 typedef struct F2LinBench F2LinBench;
 typedef void fbench(F2LinBench);
@@ -38,4 +43,9 @@ void f2lin_bench_parse_argv(int argc, char *argv[argc - 3], unsigned long long b
         if (n != ULLONG_MAX) buf[i] = n;
     }
 }
+
+#ifdef __cplusplus
+}
+#endif  
+
 #endif

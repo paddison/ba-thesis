@@ -15,10 +15,11 @@
 #include "mpi.h"
 #include "tools.h"
 #include "poly_decomp.h"
+#include "poly_rand.h"
 #include "bench.h"
 
 void compute_poly_decomp(size_t deg, int q, size_t iterations, size_t repetitions) {
-    GF2X* poly = f2lin_tools_n_deg_poly_random(deg);
+    GF2X* poly = f2lin_poly_rand_init(deg);
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
 
     for (size_t rep = 0; rep < repetitions; ++rep) {

@@ -11,6 +11,7 @@
 #include "tools.h"
 #include "bench.h"
 #include "poly_decomp.h"
+#include "poly_rand.h"
 
 #define N_DEG 7
 #define N_BENCH 2
@@ -34,7 +35,7 @@ static GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
 static
 void compute_jump_poly(size_t deg, size_t jump_size, size_t iterations, size_t repetitions) {
     F2LinBMPI bmpis[N_BENCH];
-    GF2X* min_poly = f2lin_tools_n_deg_poly_random(deg);
+    GF2X* min_poly = f2lin_poly_rand_init(deg);
     GF2X* p = init_jump_poly(min_poly, jump_size);
 
     for (size_t i = 0; i < N_BENCH; ++i) {
