@@ -69,7 +69,7 @@ int main(int argc, char* argv[argc + 1]) {
         double avg = 
             f2lin_tools_get_result(repetitions * gsize, total) / (double) iterations;
 
-        asprintf(&fname, "strong_scaling_%zu.csv", psize);
+        asprintf(&fname, "%s_%zu.csv", argv[0], psize);
 
         if (access(fname, F_OK) == -1) {
             f = fopen(fname, "a");
