@@ -60,6 +60,7 @@ extern "C" {
 #endif
 
 #include "stdlib.h"
+#include "stdint.h"
 
 #define NN 312
 #define MM 156

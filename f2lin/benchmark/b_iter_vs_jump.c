@@ -8,8 +8,17 @@
 #include "bench.h"
 #include "f2lin.h"
 #include "mpi.h"
+#include "unistd.h"
 
-void bench_iter(size_t iterations, size_t repetitions, unsigned long long jump_size) {
+typedef struct data data;
+struct data {
+    double ji;
+    double jni;
+    double iter;
+};
+
+static
+double bench_iter(size_t iterations, size_t repetitions, unsigned long long jump_size) {
     F2LinRngGeneric* rng = f2lin_rng_init(); 
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
     double times[2];
@@ -27,15 +36,14 @@ void bench_iter(size_t iterations, size_t repetitions, unsigned long long jump_s
 
     double avg = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
-    if (bmpi.rank == bmpi.root) {
-        printf("jump: %llu\ttime: %5.2es\n", jump_size, avg);
-    }
-
     f2lin_rng_destroy(rng);
     f2lin_bench_bmpi_destroy(&bmpi);
+
+    return avg;
 }
 
-void bench_jump_no_init(size_t iterations, size_t repetitions, unsigned long long jump_size) {
+static
+double bench_jump_no_init(size_t iterations, size_t repetitions, unsigned long long jump_size) {
     F2LinRngGeneric* rng = f2lin_rng_init();
     F2LinJump* jump = f2lin_jump_init(jump_size, 0);
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
@@ -52,16 +60,14 @@ void bench_jump_no_init(size_t iterations, size_t repetitions, unsigned long lon
 
     double avg = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
-    if (bmpi.rank == bmpi.root) {
-        printf("jump: %llu\ttime: %5.2es\n", jump_size, avg);
-    }
-
     f2lin_bench_bmpi_destroy(&bmpi);
     f2lin_rng_destroy(rng);
     f2lin_jump_destroy(jump);
+
+    return avg;
 }
 
-void bench_jump_with_init(size_t iterations, size_t repetitions, unsigned long long jump_size) {
+double bench_jump_with_init(size_t iterations, size_t repetitions, unsigned long long jump_size) {
     F2LinRngGeneric* rng = f2lin_rng_init();
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
     F2LinJump* jumps[iterations];
@@ -84,24 +90,42 @@ void bench_jump_with_init(size_t iterations, size_t repetitions, unsigned long l
 
     double avg = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
-    if (bmpi.rank == bmpi.root) {
-        printf("jump: %llu\ttime: %5.2es\n", jump_size, avg);
-    }
 
     f2lin_bench_bmpi_destroy(&bmpi);
     f2lin_rng_destroy(rng);
+
+    return avg;
 }
+
+static
+void write_results(size_t N, unsigned long long jumps[N], data results[N]) {
+    char* fname;
+    FILE* f;
+
+    asprintf(&fname, "b_iter_vs_jump.csv");
+    f = fopen(fname, "a");
+    fprintf(f, "jump,jump_with_init,jump_no_init,iterative\n");
+
+    for (size_t i = 0; i < N; ++i) {
+        data p = results[i];
+        fprintf(f, "%llu,%5.2e,%5.2e,%5.2e\n", jumps[i], p.ji, p.jni, p.iter);
+
+    }
+    fclose(f);
+    free(fname);
+}
+
 int main(int argc, char* argv[argc + 1]) {
     MPI_Init(&argc, &argv);
 
-    unsigned long long buf[100];
+    unsigned long long buf[BUF_MAX];
     size_t iterations, repetitions, n_jumps = argc - 3;
     int rank;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (argc < 3) return EXIT_FAILURE;
-    if (argc > 103) return EXIT_FAILURE;
+    if (argc > BUF_MAX + 3) return EXIT_FAILURE;
 
     iterations = strtoul(argv[1], 0, 10);
     repetitions = strtoul(argv[2], 0, 10);
@@ -109,31 +133,18 @@ int main(int argc, char* argv[argc + 1]) {
     if (iterations == -1 || repetitions == -1) return EXIT_FAILURE;
 
     f2lin_bench_parse_argv(argc, &argv[3], buf);
+    data results[n_jumps];
 
-
-    if (rank == 0) {
-        printf("===========================================\n");
-        printf("Jump with init:\n");
-    }
     for (size_t i = 0; i < n_jumps; ++i) {
-        bench_jump_with_init(iterations, repetitions, buf[i]);
+        results[i].ji = bench_jump_with_init(iterations, repetitions, buf[i]);
+        results[i].jni = bench_jump_no_init(iterations, repetitions, buf[i]);
+        results[i].iter = bench_iter(iterations, repetitions, buf[i]);
+        
+        if (rank == 0) printf("jump: %llu\tji: %5.2e\tjni: %5.2e\titer: %5.2e\n",
+                              buf[i], results[i].ji, results[i].jni, results[i].iter);
     }
 
-    if (rank == 0) {
-        printf("===========================================\n");
-        printf("Jump no init:\n");
-    }
-    for (size_t i = 0; i < n_jumps; ++i) {
-        bench_jump_no_init(iterations, repetitions, buf[i]);
-    }
-
-    if (rank == 0) {
-        printf("===========================================\n");
-        printf("Iter:\n");
-    }
-    for (size_t i = 0; i < n_jumps; ++i) {
-        bench_iter(iterations, repetitions, buf[i]);
-    }
+    if (rank == 0) write_results(n_jumps, buf, results);
 
     MPI_Finalize();
     return EXIT_SUCCESS;

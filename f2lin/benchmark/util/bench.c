@@ -2,6 +2,14 @@
 #include "mpi.h"
 #include "tools.h"
 
+void f2lin_bench_parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]) {
+    // we ignore the first argument, which is the program name
+    for (size_t i = 0; i < argc - 3; ++i) {
+        unsigned long long n = strtoull(argv[i], 0, 10);
+        if (n != ULLONG_MAX) buf[i] = n;
+    }
+}
+
 F2LinBMPI f2lin_bench_bmpi_init(size_t repetitions) {
     int rank, gsize;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

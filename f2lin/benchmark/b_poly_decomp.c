@@ -18,7 +18,33 @@
 #include "poly_rand.h"
 #include "bench.h"
 
-void compute_poly_decomp(size_t deg, int q, size_t iterations, size_t repetitions) {
+typedef struct data data;
+struct data {
+    double p[9];
+};
+
+static
+void write_results(size_t N, unsigned long long degs[N], data results[N]) {
+        char* fname;
+        FILE* f;
+
+        asprintf(&fname, "b_poly_decomp.csv");
+        f = fopen(fname, "a");
+        fprintf(f, "deg,2,3,4,5,6,7,8,9,10\n");
+
+        for (size_t i = 0; i < N; ++i) {
+            double *d = results[i].p;
+            fprintf(f, "%llu,", degs[i]);
+
+            for (size_t j = 0; j < 9; ++j) {
+                fprintf(f, "%5.2e,", d[j]);
+            }
+        }
+        fclose(f);
+        free(fname);
+}
+
+double compute_poly_decomp(size_t deg, int q, size_t iterations, size_t repetitions) {
     GF2X* poly = f2lin_poly_rand_init(deg);
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
 
@@ -41,41 +67,46 @@ void compute_poly_decomp(size_t deg, int q, size_t iterations, size_t repetition
     }
 
     double res = f2lin_bench_bmpi_eval(&bmpi);
+
+    f2lin_bench_bmpi_destroy(&bmpi);
+    GF2X_zero_destroy(poly);
     
-    if (bmpi.rank == bmpi.root) {
-        printf("q: %2d\ttime: %5.2es\n", 
-               q, res);
-    }
+    return res;
 }
 
 int main(int argc, char* argv[argc + 1]) {
     MPI_Init(&argc, &argv);
 
     size_t iterations, repetitions, N_DEGS = argc - 3;
-    unsigned long long degs[100];
+    unsigned long long degs[BUF_MAX];
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (argc < 3) {
         fprintf(stderr, "Usage: file iterations repetitions\n");
-    } else if (argc > 100) {
+        return EXIT_FAILURE;
+    } else if (argc > BUF_MAX + 3) {
         fprintf(stderr, "To many arguments, only suppport a maximum of 1000");
+        return EXIT_FAILURE;
     } else {
         iterations = strtoull(argv[1], 0, 10);
         repetitions = strtoull(argv[2], 0, 10);
     }
 
     f2lin_bench_parse_argv(argc, &argv[3], degs);
+    data results[N_DEGS];
 
     for (size_t i = 0; i < N_DEGS; ++i) {
-        if (rank == 0) {
-            printf("===================================");
-            printf("Degree of polynomial: %7llu\n", degs[i]);
-        }
+        if (rank == 0) printf("deg poly: %7llu\t", degs[i]);
         for (size_t q = 2; q <= 10; ++q) {
-            compute_poly_decomp(degs[i], q, 100, 100);
+            double avg = compute_poly_decomp(degs[i], q, 100, 100);
+            results[i].p[q - 2] = avg;
+            if (rank == 0) printf("pd%2zu: %5.2e\n", q, avg); 
         }
     }
+
+    /* write the result to file */
+    if (rank == 0) write_results(N_DEGS, degs, results);
 
     MPI_Finalize();
     return EXIT_SUCCESS;

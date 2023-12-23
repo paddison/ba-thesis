@@ -25,7 +25,11 @@ void f2lin_rng_generic_destroy(F2LinRngGeneric* rng);
 long f2lin_rng_generic_state_size();
 
 // ask christian if this is good style or not
+#ifdef __cplusplus
+void f2lin_rng_generic_gen_n_numbers(F2LinRngGeneric* rng, size_t N, uint64_t *buf);
+#else
 void f2lin_rng_generic_gen_n_numbers(F2LinRngGeneric* rng, size_t N, uint64_t buf[N]);
+#endif
 
 
 #ifdef TEST

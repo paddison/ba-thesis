@@ -14,7 +14,32 @@
 #include "poly_rand.h"
 
 #define N_DEG 7
-#define N_BENCH 2
+
+typedef struct data data;
+struct data { 
+    size_t deg; 
+    size_t jump;
+    double jp; 
+    double dp; 
+};
+
+static
+void write_results(size_t N, data results[N]) {
+    char* fname;
+    FILE* f;
+
+    asprintf(&fname, "jump_ahead_init_jump_poly.csv");
+    f = fopen(fname, "a");
+
+    for (size_t i = 0; i < N; ++i) {
+        data *p = &results[i];
+        fprintf(f, "%zu,%zu,%5.2e,%5.2e\n", 
+                p->deg,p->jump,p->jp,p->dp);
+    }
+
+    fclose(f);
+    free(fname);
+}
 
 /* This implementation is exactly copied from "jump_ahead.c" */
 static GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
@@ -33,17 +58,40 @@ static GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
 }
 
 static
-void compute_jump_poly(size_t deg, size_t jump_size, size_t iterations, size_t repetitions) {
-    F2LinBMPI bmpis[N_BENCH];
+double bench_decomp_poly(size_t deg, size_t jump_size, size_t iterations, size_t repetitions) {
+    F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
     GF2X* min_poly = f2lin_poly_rand_init(deg);
     GF2X* p = init_jump_poly(min_poly, jump_size);
 
-    for (size_t i = 0; i < N_BENCH; ++i) {
-        bmpis[i] = f2lin_bench_bmpi_init(repetitions);
+    for (size_t rep = 0; rep < repetitions; ++rep) {
+        double start, end, time, times[2];
+        times[0] = MPI_Wtime();
+        for (size_t i = 0; i < iterations; ++i) {
+            F2LinPolyDecomp* pd = f2lin_poly_decomp_init_from_gf2x(p, 4);
+            f2lin_poly_decomp_destroy(pd);
+        }
+        times[1] = MPI_Wtime();
+
+        f2lin_bench_bmpi_update(&bmpi, rep, (times[1] - times[0]));
     }
 
+    double res_init_decomp_poly = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
+
+    f2lin_bench_bmpi_destroy(&bmpi);
+    GF2X_zero_destroy(p);
+    GF2X_zero_destroy(min_poly);
+
+    return res_init_decomp_poly;
+}
+
+static
+double bench_jump_poly(size_t deg, size_t jump_size, size_t iterations, size_t repetitions) {
+    F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
+    GF2X* min_poly = f2lin_poly_rand_init(deg);
+    GF2X* p = init_jump_poly(min_poly, jump_size);
+
     for (size_t rep = 0; rep < repetitions; ++rep) {
-        double start, end, time, times[N_BENCH + 1];
+        double start, end, time, times[2];
         times[0] = MPI_Wtime();
         for (size_t i = 0; i < iterations; ++i) {
             GF2X* p = init_jump_poly(min_poly, jump_size);
@@ -51,29 +99,16 @@ void compute_jump_poly(size_t deg, size_t jump_size, size_t iterations, size_t r
         }
         times[1] = MPI_Wtime();
 
-        for (size_t i = 0; i < iterations; ++i) {
-            F2LinPolyDecomp* pd = f2lin_poly_decomp_init_from_gf2x(p, 4);
-            f2lin_poly_decomp_destroy(pd);
-        }
-        times[2] = MPI_Wtime();
-
-        f2lin_bench_bmpi_update(&bmpis[0], rep, (times[1] - times[0]) / iterations);
-        f2lin_bench_bmpi_update(&bmpis[1], rep, (times[2] - times[1]) / iterations);
+        f2lin_bench_bmpi_update(&bmpi, rep, (times[1] - times[0]));
     }
 
-    double res_init_jump_poly = f2lin_bench_bmpi_eval(&bmpis[0]);
-    double res_init_decomp_poly = f2lin_bench_bmpi_eval(&bmpis[1]);
+    double res_init_jump_poly = f2lin_bench_bmpi_eval(&bmpi);
 
-    if (bmpis[0].rank == bmpis[0].root) {
-        printf("jump size: %6zu\tminpoly: %5.2es\tdecomppoly: %5.2es\n", 
-               jump_size, res_init_jump_poly, res_init_decomp_poly);
-    }
-     
-    for (size_t i = 0; i < N_BENCH; ++i) {
-        f2lin_bench_bmpi_destroy(&bmpis[i]);
-    }
+    f2lin_bench_bmpi_destroy(&bmpi);
     GF2X_zero_destroy(p);
     GF2X_zero_destroy(min_poly);
+
+    return res_init_jump_poly;
 }
 
 int main(int argc, char* argv[argc + 1]) {
@@ -85,6 +120,8 @@ int main(int argc, char* argv[argc + 1]) {
     size_t minpoly_sizes[N_DEG] = { 64, 128, 256, 512, 1024, 4096, 19937 };
     unsigned long long jumps[1000];
 
+    
+    data *result;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (argc < 3) {
@@ -96,6 +133,10 @@ int main(int argc, char* argv[argc + 1]) {
         repetitions = strtoull(argv[2], 0, 10);
     }
 
+    if (rank == root) {
+        result = calloc(sizeof(data), N_JUMPS * N_DEG);
+    }
+
     f2lin_bench_parse_argv(argc, &argv[3], jumps);
 
     for (size_t i = 0; i < N_DEG; ++i) {
@@ -104,10 +145,24 @@ int main(int argc, char* argv[argc + 1]) {
             printf("degree of minimal polynomial: %zu\n", minpoly_sizes[i]);
         }
         for (size_t j = 0; j < N_JUMPS; ++j) {
-            compute_jump_poly(minpoly_sizes[i], jumps[j], iterations, repetitions);
+            double avg_jp = bench_jump_poly(minpoly_sizes[i], jumps[j], 
+                                            iterations, repetitions);
+            double avg_dp = bench_decomp_poly(minpoly_sizes[i], jumps[j], 
+                                              iterations, repetitions);
+            if (rank == root) {
+                result[i * N_JUMPS + j] = (data) { 
+                    .deg = minpoly_sizes[i],
+                    .jump = jumps[j],
+                    .jp = avg_jp,
+                    .dp = avg_dp
+                };
+                printf("jump: %llu, jumppoly: %5.2es\t, decomppoly: %5.2es\n",
+                        jumps[i], avg_jp, avg_dp);
+            }
         }
     }
 
+    if (rank == 0) write_results(N_DEG * N_JUMPS, result);
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

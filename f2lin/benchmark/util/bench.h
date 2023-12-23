@@ -8,6 +8,7 @@ extern "C" {
 #include <stdlib.h>
 #include <limits.h>
 
+#define BUF_MAX 100
 
 typedef struct F2LinBench F2LinBench;
 typedef void fbench(F2LinBench);
@@ -35,14 +36,11 @@ void f2lin_bench_bmpi_update(F2LinBMPI*bmpi, size_t i, double time) {
 
 double f2lin_bench_bmpi_eval(F2LinBMPI* bmpi); 
 
-static inline
-void f2lin_bench_parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]) {
-    // we ignore the first argument, which is the program name
-    for (size_t i = 0; i < argc - 3; ++i) {
-        unsigned long long n = strtoull(argv[i], 0, 10);
-        if (n != ULLONG_MAX) buf[i] = n;
-    }
-}
+#ifdef __cplusplus
+void f2lin_bench_parse_argv(int argc, char **argv, unsigned long long *buf);
+#else
+void f2lin_bench_parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]);
+#endif
 
 #ifdef __cplusplus
 }

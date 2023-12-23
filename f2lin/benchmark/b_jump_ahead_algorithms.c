@@ -26,8 +26,10 @@
 #include "gf2x_wrapper.h"
 #include "poly_rand.h"
 
+#define BUF_MAX 100
 int grank;
 
+/* thank you Kingshuk :) */
 #define DEBUG_WAIT(a)                                                   \
   if(a) {                                                               \
     printf("Rank-%d: pid= %d\n", grank, getpid()); fflush(stdout);      \
@@ -38,17 +40,44 @@ int grank;
     MPI_Bcast(&temp_inside, 1, MPI_INT, 0, MPI_COMM_WORLD);                      \
   }
 
+typedef struct data data;
+
+struct data {
+    size_t deg;
+    double h;
+    double sw[10];
+    double swd[10];
+};
+
 static
-void parse_argv(int argc, char *argv[argc - 3], unsigned long long buf[argc - 3]) {
-    // we ignore the first argument, which is the program name
-    for (size_t i = 0; i < argc - 3; ++i) {
-        unsigned long long n = strtoull(argv[i], 0, 10);
-        if (n != ULLONG_MAX) buf[i] = n;
-    }
+void write_results(size_t N, unsigned long long buf[N], data results[N]) {
+        char* fname;
+        FILE* f;
+
+        asprintf(&fname, "jump_ahead_algorithms.csv");
+
+        f = fopen(fname, "a");
+        fprintf(f, "deg,horner,\
+sw1,sw2,sw3,sw4,sw5,sw6,sw7,sw8,sw9,sw10,\
+swd1,swd2,swd3,swd4,swd5,swd6,swd7,swd8,swd9,swd10\n");
+
+        for (size_t i = 0; i < N; ++i) {
+            fprintf(f, "%llu,%5.2e,\
+%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,\
+%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e,%5.2e\n",
+                    buf[i], results[i].h,
+                    results[i].sw[0],results[i].sw[1],results[i].sw[2],results[i].sw[3],results[i].sw[4],
+                    results[i].sw[5],results[i].sw[6],results[i].sw[7],results[i].sw[8],results[i].sw[9],
+                    results[i].swd[0],results[i].swd[1],results[i].swd[2],results[i].swd[3],results[i].swd[4],
+                    results[i].swd[5],results[i].swd[6],results[i].swd[7],results[i].swd[8],results[i].swd[9]);
+        }
+        fclose(f);
+        free(fname);
+
 }
 
 static 
-void exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size_t repetitions) {
+double exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size_t repetitions) {
     double avg;
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
 
@@ -74,24 +103,18 @@ void exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, size
         f2lin_bench_bmpi_update(&bmpi, rep, end - start);
     }
 
-    avg = f2lin_bench_bmpi_eval(&bmpi);
+    avg = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
-    if (bmpi.rank == bmpi.root) {
-        printf("degree of polynomial: %llu\ttime: %5.2es\n", 
-               poly_deg, avg / (double) iterations);
-    }
-    
     f2lin_jump_ahead_destroy(jp);
     f2lin_rng_generic_destroy(rng);
     f2lin_bench_bmpi_destroy(&bmpi);
+
+    return avg;
 }
 
 static 
 void do_benchmark(size_t n_deg, unsigned long long poly_degs[n_deg], F2LinConfig *cfg, 
                   size_t iterations, size_t repetitions) {
-    for (size_t i = 0; i < n_deg; ++i) {
-        exec(poly_degs[i], cfg, iterations, repetitions);
-    }
 }
 
 int main(int argc, char* argv[argc + 1]) {  
@@ -103,61 +126,55 @@ int main(int argc, char* argv[argc + 1]) {
         printf("Repetitions: Number of datapoints collected per process\n");
     }
 
-    unsigned long long buf[100] = { 0 };
+    unsigned long long buf[BUF_MAX] = { 0 };
     size_t iterations = strtoull(argv[1], 0, 10), repetitions = strtoull(argv[2], 0, 10);;
+    size_t n_deg = argc - 3;
+
     if (iterations == ULLONG_MAX || repetitions == ULLONG_MAX) {
         fprintf(stderr, "Got non numberical value for iterations or repetitions"); 
         return EXIT_FAILURE;
     }
-    size_t n_deg;
+
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 
-    DEBUG_WAIT(0);
-    F2LinConfig cfg = { .q = 5, .algorithm = HORNER };
 
-    if (argc > 100) {
-        fprintf(stderr, "Too many arguments, only support a maximum of 100.\n");
+    if (argc > BUF_MAX + 3) {
+        fprintf(stderr, "Too many arguments, only support a maximum of %d.\n", BUF_MAX);
         return EXIT_FAILURE;
     }
 
-    if (argc > 3) { 
-        parse_argv(argc, &argv[3], buf);
-        n_deg = argc - 3;
-    } else {
-        n_deg = 10; 
-        buf[0] = 1;
-        buf[1] = 16;
-        buf[2] = 64;
-        buf[3] = 256;
-        buf[4] = 512;
-        buf[5] = 1024;
-        buf[6] = 2048;
-        buf[7] = 4096;
-        buf[8] = 8192;
-        buf[9] = 19937;
-    }
+    f2lin_bench_parse_argv(argc, &argv[3], buf);
 
-    if (grank == 0) {
-        printf("horner:\n");
+    F2LinConfig cfg = { .q = 5, .algorithm = HORNER };
+    data results[n_deg];
+
+    for (size_t i = 0; i < n_deg; ++i) {
+        double avg = exec(buf[i], &cfg, iterations, repetitions);
+        results[i].h = avg;
+        if (grank == 0) printf("polydeg: %llu\nhorner:%5.2e\n", buf[i], avg);
     }
-    do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
 
     for (size_t q = 1; q <= 10; ++q) {
         cfg.q = q;
         cfg.algorithm = SLIDING_WINDOW;
-        if (grank == 0) {
-            printf("=========================================\nQ: %zu\n", q);
-            printf("sliding window\n");
+
+        for (size_t i = 0; i < n_deg; ++i) {
+            double avg = exec(buf[i], &cfg, iterations, repetitions);
+            results[i].sw[q - 1] = avg;
+            if (grank == 0) printf("sw%zu: %5.2e\n", q, avg);
         }
-        do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
 
         cfg.algorithm = SLIDING_WINDOW_DECOMP;
-        if (grank == 0) {
-            printf("sliding window decomp\n");
-        }
 
-        do_benchmark(n_deg, buf, &cfg, iterations, repetitions);
+        for (size_t i = 0; i < n_deg; ++i) {
+            double avg = exec(buf[i], &cfg, iterations, repetitions);
+            results[i].swd[q - 1] = avg;
+            if (grank == 0) printf("swd%zu: %5.2e\n", q, avg);
+        }
     }
+
+    /* write the results */
+    if (grank == 0) write_results(n_deg, buf, results);
 
     MPI_Finalize();
 
