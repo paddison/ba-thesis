@@ -103,8 +103,9 @@ int main(int argc, char* argv[argc + 1]) {
         for (size_t q = 2; q <= 10; ++q) {
             double avg = compute_poly_decomp(degs[i], q, 100, 100);
             results[i].p[q - 2] = avg;
-            if (rank == 0) printf("pd%2zu: %5.2e\n", q, avg); 
+            if (rank == 0) printf("pd%2zu: %5.2e\t", q, avg); 
         }
+        if (rank == 0) printf("\n");
     }
 
     /* write the result to file */

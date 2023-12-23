@@ -31,6 +31,8 @@ void write_results(char exec_name[static 1], size_t N, data results[N]) {
     asprintf(&fname, "%s.csv", exec_name);
     f = fopen(fname, "a");
 
+    fprintf(f, "deg,jump,jumppoly,decomppoly\n");
+
     for (size_t i = 0; i < N; ++i) {
         data *p = &results[i];
         fprintf(f, "%zu,%zu,%5.2e,%5.2e\n", 
@@ -157,7 +159,7 @@ int main(int argc, char* argv[argc + 1]) {
                     .dp = avg_dp
                 };
                 printf("jump: %llu, jumppoly: %5.2es\t, decomppoly: %5.2es\n",
-                        jumps[i], avg_jp, avg_dp);
+                        jumps[j], avg_jp, avg_dp);
             }
         }
     }

@@ -153,8 +153,9 @@ int main(int argc, char** argv) {
     double results[n_jumps];
 
     for (size_t i = 0; i < n_jumps; ++i) {
-        double avg = benchmark_jump_polynomial(iterations, repetitions, jumps[i]);
-        if (rank == 0) printf("jump:%llu\tjumppoly:%5.2e\n", jumps[i], avg); 
+        results[i] = benchmark_jump_polynomial(iterations, repetitions, jumps[i]);
+
+        if (rank == 0) printf("jump:%llu\tjumppoly:%5.2e\n", jumps[i], results[i]); 
     }
 
     double minpoly = benchmark_minimal_polynomial(iterations, repetitions);

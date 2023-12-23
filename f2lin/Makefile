@@ -186,7 +186,8 @@ benchmark: b_jump_ahead_algorithms_64 \
 		   b_flint_64 b_flint_tinymt b_flint_mt \
 		   b_ntl_64 b_ntl_tinymt b_ntl_mt \
 		   b_iter_vs_jump_64 \
-		   b_64
+		   b_64 \
+		   b_strong_scaling_64
 
 b_jump_ahead_algorithms_64: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
@@ -276,4 +277,5 @@ build/%.o: %.cpp
 .PHONY: clean
 clean:
 	rm build/*.o
+	rm bin/*.csv
 

@@ -59,6 +59,7 @@ void write_results(char exec_name[static 1], size_t N, unsigned long long buf[N]
         f = fopen(fname, "a");
         fprintf(f, "deg,horner,");
         for (size_t i = 1; i <= 10; ++i) fprintf(f, "sw%zu,", i);
+        for (size_t i = 1; i <= 10; ++i) fprintf(f, "swd%zu,", i);
         fprintf(f, "\n");
 
         for (size_t i = 0; i < N; ++i) {
@@ -144,29 +145,23 @@ int main(int argc, char* argv[argc + 1]) {
     data results[n_deg];
 
     for (size_t i = 0; i < n_deg; ++i) {
-        double avg = exec(buf[i], &cfg, iterations, repetitions);
-        results[i].h = avg;
-        if (grank == 0) printf("polydeg: %llu\nhorner:%5.2e\n", buf[i], avg);
+        results[i].h  = exec(buf[i], &cfg, iterations, repetitions);
+        if (grank == 0) printf("polydeg: %llu\thorner:%5.2e\t", buf[i], results[i].h);
+
+        for (size_t q = 1; q <= 10; ++q) {
+            cfg.q = q;
+            cfg.algorithm = SLIDING_WINDOW;
+
+            results[i].sw[q - 1]  = exec(buf[i], &cfg, iterations, repetitions);
+            if (grank == 0) printf("sw%zu: %5.2e\t", q, results[i].sw[q - 1]);
+
+            cfg.algorithm = SLIDING_WINDOW_DECOMP;
+            results[i].swd[q - 1] = exec(buf[i], &cfg, iterations, repetitions);
+            if (grank == 0) printf("swd%zu: %5.2e\t", q, results[i].swd[q - 1]);
+        }
+        if (grank == 0) printf("\n");
     }
 
-    for (size_t q = 1; q <= 10; ++q) {
-        cfg.q = q;
-        cfg.algorithm = SLIDING_WINDOW;
-
-        for (size_t i = 0; i < n_deg; ++i) {
-            double avg = exec(buf[i], &cfg, iterations, repetitions);
-            results[i].sw[q - 1] = avg;
-            if (grank == 0) printf("sw%zu: %5.2e\n", q, avg);
-        }
-
-        cfg.algorithm = SLIDING_WINDOW_DECOMP;
-
-        for (size_t i = 0; i < n_deg; ++i) {
-            double avg = exec(buf[i], &cfg, iterations, repetitions);
-            results[i].swd[q - 1] = avg;
-            if (grank == 0) printf("swd%zu: %5.2e\n", q, avg);
-        }
-    }
 
     /* write the results */
     if (grank == 0) write_results(argv[0], n_deg, buf, results);
