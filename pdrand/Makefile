@@ -5,10 +5,9 @@
 # Compile Flags
 #-----------------------------------------
 
-include_dirs := -I ${HOME}/.local/include -I ./benchmark/util -I .
-lib_dir := -L ${HOME}/.local/lib
+include_dirs := -I ${HOME}/.local/include -I .
 
-CFLAGS := $(include_dirs) $(lib_dir) -pthread
+CFLAGS := $(include_dirs) -pthread
 opt_flag := -g3
 
 # directory structure
@@ -16,7 +15,8 @@ opt_flag := -g3
 
 build := build
 out := bin
-bench := benchmark
+bench := bench
+benchout := bin/bench
 
 # object files needed for running the algorithm etc.
 #-----------------------------------------
@@ -34,7 +34,7 @@ test_obj := $(patsubst %.c, $(build)/%.o, $(test_src))
 # this tells make where all the source files, headers etc. are
 #-----------------------------------------
 
-vpath %.c benchmark/util benchmark
+vpath %.c ../util bench
 vpath %.o build
 
 # =====================================================================================
@@ -60,27 +60,32 @@ t_prand48: $(test_obj)
 # Rules for building the benachmark executables
 # =====================================================================================
 
+.SECONDEXPANSION:
 benchmark: CC = mpicc
-benchmark: CFLAGS += -I $(bench)
+benchmark: CFLAGS += -I ../util
 benchmark: opt_flag = -O3
-benchmark: b_jump b_jump_vs_iter b_strong_scaling
+benchmark: b_jump_mt b_jump_64 b_jump_vs_iter b_strong_scaling | $(benchout)
 
-b_jump: $(bench_obj) $(objects) $(build)/b_jump.o
-	$(CC) $(CFLAGS) $^ -o $(out)/$@
-
-b_jump_vs_iter: $(bench_obj) $(objects) $(build)/b_jump_vs_iter.o
-	$(CC) $(CFLAGS) $^ -o $(out)/$@
-
-b_strong_scaling: $(bench_obj) $(objects) $(build)/b_strong_scaling.o
-	$(CC) $(CFLAGS) $^ -o $(out)/$@
+b_jump b_jump_vs_iter b_strong_scaling: $(bench_obj) $(objects) $(build)/$$@.o
+	$(CC) $(CFLAGS) $^ -o $(benchout)/$@
 
 
 # =====================================================================================
 # Generic rules for building object files
 # =====================================================================================
 
-build/%.o: %.c
+build/%.o: %.c | $(build)
 	$(CC) $(opt_flag) $(CFLAGS) -c $< -o $@
+
+$(build):
+	mkdir $(build)
+
+# why is it not building this?
+$(benchout): | $(out)
+	mkdir $(benchout)
+
+$(out):
+	mkdir $(out)
 
 # =====================================================================================
 # Cleaning the build directory
@@ -89,5 +94,5 @@ build/%.o: %.c
 .PHONY: clean
 clean:
 	rm build/*.o
-	rm bin/*.csv
+	rm bin/bench/*.csv
 
