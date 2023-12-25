@@ -67,7 +67,7 @@ vpath %.h include src
 # Default Targets
 # =====================================================================================
 
-all: rng64test rngmttest rngtinymttest rngxoshirotest
+all: rng64test rngmttest rngtinymttest rngxoshirotest | $(out)
 
 rng64test: $(objects) $(rng64) $(build)/test.o
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
@@ -111,8 +111,8 @@ test: CXXFLAGS += -DTEST
 test: CFLAGS += -DTEST
 test: $$(addprefix t_jump_ahead_first_n_, $(rngs)) \
 	  $$(addprefix t_jump_ahead_algorithms_, $(rngs)) \
-	  $$(addprefix t_verify_min_poly_, $(rngs)) 
-	@echo done building tests
+	  $$(addprefix t_verify_min_poly_, $(rngs)) \
+	  | $(out);
 
 # Test if jump == step for first n numbers
 #-----------------------------------------
@@ -148,8 +148,7 @@ benchmark: b_jump_ahead_algorithms b_poly_decomp b_jump_ahead_init_jump_poly \
 		   $$(addprefix b_ntl_, $(rngs)) \
 		   $$(addprefix b_iter_vs_jump_, $(rngs)) \
 		   $$(addprefix b_strong_scaling_, $(rngs))\
-		   b_64 
-	@echo $^
+		   b_64 | blub
 
 
 b_jump_ahead_algorithms: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o
@@ -203,11 +202,19 @@ minpoly%: $$($$(addsuffix $$*_obj, rng))
 # Generic rules for building object files
 # =====================================================================================
 
-build/%.o: %.c
+build/%.o: %.c | $(build)
 	$(CC) $(opt_flag) $(CFLAGS) -c $< -o $@
 
-build/%.o: %.cpp
+build/%.o: %.cpp | $(build)
 	$(CXX) $(opt_flag) $(CXXFLAGS) -c $< -o $@
+
+blub:
+	@echo making bin
+	mkdir $(out)
+
+$(build):
+	@echo making build
+	mkdir $(build)
 
 
 # =====================================================================================
