@@ -43,7 +43,7 @@ vpath %.o build
 
 all: prand 
 
-prand: $(objects) 
+prand: $(objects) $(out)
 	$(CC) $(CFLAGS) $^ -o $(out)/$@ 
 
 # =====================================================================================
@@ -53,7 +53,7 @@ prand: $(objects)
 # defining the test names
 test: t_prand48
 
-t_prand48: $(test_obj) 
+t_prand48: $(test_obj) | $(out)
 	$(CC) $(CFLAGS) $^ -o $(out)/$@
 
 # =====================================================================================
@@ -64,10 +64,12 @@ t_prand48: $(test_obj)
 benchmark: CC = mpicc
 benchmark: CFLAGS += -I ../util
 benchmark: opt_flag = -O3
-benchmark: b_jump_mt b_jump_64 b_jump_vs_iter b_strong_scaling | $(benchout)
+benchmark: b_jump b_jump_vs_iter b_strong_scaling | $(benchout)
+	mv $^ $|
+
 
 b_jump b_jump_vs_iter b_strong_scaling: $(bench_obj) $(objects) $(build)/$$@.o
-	$(CC) $(CFLAGS) $^ -o $(benchout)/$@
+	$(CC) $(CFLAGS) $^ -o $@
 
 
 # =====================================================================================
@@ -93,6 +95,6 @@ $(out):
 
 .PHONY: clean
 clean:
-	rm build/*.o
-	rm bin/bench/*.csv
+	rm -r build
+	rm -r bin
 

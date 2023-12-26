@@ -5,8 +5,13 @@
 # Compile Flags
 #-----------------------------------------
 
-include_dirs := -I ./include -I ./src -I ./src/rng_generic -I ${HOME}/.local/include -I $ ./benchmark -I ../util
-lib_dir := #-L ${HOME}/.local/lib
+include_dirs := -I ./include \
+				-I ./src \
+				-I ./src/rng_generic \
+				-I ${HOME}/.local/include \
+				-I $ ./benchmark \
+				-I ../util
+lib_dir := -L ${HOME}/.local/lib
 
 CXXFLAGS := -std=c++11 $(include_dirs)  $(lib_dir) -pthread
 CFLAGS := $(include_dirs) $(lib_dir) -pthread
@@ -125,19 +130,25 @@ test: $$(addprefix t_jump_ahead_first_n_, $(rngs)) \
 # Test if jump == step for first n numbers
 #-----------------------------------------
 
-t_jump_ahead_first_n_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(jump_ahead_first_n)
+t_jump_ahead_first_n_%: $$($$(addsuffix $$*_obj, rng)) \
+						$(objects) \
+						$(jump_ahead_first_n)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
 
 # Testing jump algorithms
 #-----------------------------------------
 
-t_jump_ahead_algorithms_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(jump_ahead_algorithms)
+t_jump_ahead_algorithms_%: $$($$(addsuffix $$*_obj, rng)) \
+						   $(objects) \
+						   $(jump_ahead_algorithms)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
 
 # Verifying minimal polynomials 
 #-----------------------------------------
 
-t_verify_min_poly_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(verify_min_poly)
+t_verify_min_poly_%: $$($$(addsuffix $$*_obj, rng)) \
+					 $(objects) \
+					 $(verify_min_poly)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
 
 
@@ -161,25 +172,46 @@ benchmark: b_jump_ahead_algorithms b_poly_decomp b_jump_ahead_init_jump_poly \
 	$(call move_prereqs, $|)
 
 
-b_jump_ahead_algorithms: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o 
+b_jump_ahead_algorithms: $(rng64_obj) \
+						 $(build)/poly_rand.o \
+						 $(objects) \
+						 $(bench_obj) \
+						 $(build)/b_jump_ahead_algorithms.o 
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
-b_poly_decomp: $(rng64_obj) $(objects) $(build)/poly_rand.o $(bench_obj) $(build)/b_poly_decomp.o
+b_poly_decomp: $(rng64_obj) \
+			   $(objects) \
+			   $(build)/poly_rand.o \
+			   $(bench_obj) \
+			   $(build)/b_poly_decomp.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
-b_jump_ahead_init_jump_poly: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_init_jump_poly.o
+b_jump_ahead_init_jump_poly: $(rng64_obj) \
+							 $(build)/poly_rand.o \
+							 $(objects) \
+							 $(bench_obj) \
+							 $(build)/b_jump_ahead_init_jump_poly.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
-b_flint_%: $$($$(addsuffix $$*_obj, rng)) $(bench_obj) $(build)/b_flint.o
+b_flint_%: $$($$(addsuffix $$*_obj, rng)) \
+		   $(bench_obj) \
+		   $(build)/b_flint.o
 	$(CC) $(CFLAGS) $(opt_flag) $^ -o $@ -lflint
 
-b_ntl_%: $$($$(addsuffix $$*_obj, rng)) $(bench_obj) $(build)/b_ntl.o
+b_ntl_%: $$($$(addsuffix $$*_obj, rng)) \
+	     $(bench_obj) \
+		 $(build)/b_ntl.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
-b_iter_vs_jump_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(bench_obj) $(build)/b_iter_vs_jump.o
+b_iter_vs_jump_%: $$($$(addsuffix $$*_obj, rng)) \
+				  $(objects) $(bench_obj) \
+				  $(build)/b_iter_vs_jump.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
-b_strong_scaling_%: $$($$(addsuffix $$*_obj, rng)) $(bench_obj) $(objects) $(build)/b_strong_scaling.o
+b_strong_scaling_%: $$($$(addsuffix $$*_obj, rng)) \
+				    $(bench_obj) \
+					$(objects) \
+					$(build)/b_strong_scaling.o
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_64: $(bench_obj) $(build)/b_64.o
@@ -231,5 +263,3 @@ $(out) $(build):
 clean:
 	rm -r build
 	rm -r bin
-
-
