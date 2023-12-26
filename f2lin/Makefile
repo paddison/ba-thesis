@@ -22,6 +22,8 @@ out := bin
 lib := lib
 inc := include
 bench := benchmark
+benchout := bin/bench
+testout := bin/tests
 
 # object files needed for running the algorithm etc.
 #-----------------------------------------
@@ -63,13 +65,20 @@ vpath %.cpp src:benchmark:benchmark/util
 vpath %.o build
 vpath %.h include src
 
+# move all prerequisites of a target into a directory provided as an argument
+#------------------------------------------
+define move_prereqs
+	mv $^ $(1)
+endef
+
+
 # =====================================================================================
 # Default Targets
 # =====================================================================================
 
-all: rng64test rngmttest rngtinymttest rngxoshirotest | $(out)
+all: rng64test rngmttest rngtinymttest rngxoshirotest 
 
-rng64test: $(objects) $(rng64) $(build)/test.o
+rng64test: $(objects) $(rng64) $(build)/test.o | $(out)
 	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
 
 rngmttest: $(objects) $(rngmt) $(build)/test.o
@@ -112,25 +121,26 @@ test: CFLAGS += -DTEST
 test: $$(addprefix t_jump_ahead_first_n_, $(rngs)) \
 	  $$(addprefix t_jump_ahead_algorithms_, $(rngs)) \
 	  $$(addprefix t_verify_min_poly_, $(rngs)) \
-	  | $(out);
+	  | $(testout)
+	$(call move_prereqs, $|)
 
 # Test if jump == step for first n numbers
 #-----------------------------------------
 
 t_jump_ahead_first_n_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(jump_ahead_first_n)
-	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
 
 # Testing jump algorithms
 #-----------------------------------------
 
 t_jump_ahead_algorithms_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(jump_ahead_algorithms)
-	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
 
 # Verifying minimal polynomials 
 #-----------------------------------------
 
 t_verify_min_poly_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(verify_min_poly)
-	$(CXX) $(CXXFLAGS) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
 
 
 # =====================================================================================
@@ -148,40 +158,41 @@ benchmark: b_jump_ahead_algorithms b_poly_decomp b_jump_ahead_init_jump_poly \
 		   $$(addprefix b_ntl_, $(rngs)) \
 		   $$(addprefix b_iter_vs_jump_, $(rngs)) \
 		   $$(addprefix b_strong_scaling_, $(rngs))\
-		   b_64 | blub
+		   b_64 \
+		   | $(benchout) 
+	$(call move_prereqs, $|)
 
 
-b_jump_ahead_algorithms: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o
-	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+b_jump_ahead_algorithms: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_algorithms.o 
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_poly_decomp: $(rng64_obj) $(objects) $(build)/poly_rand.o $(bench_obj) $(build)/b_poly_decomp.o
-	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_jump_ahead_init_jump_poly: $(rng64_obj) $(build)/poly_rand.o $(objects) $(bench_obj) $(build)/b_jump_ahead_init_jump_poly.o
-	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_flint_%: $$($$(addsuffix $$*_obj, rng)) $(bench_obj) $(build)/b_flint.o
-	$(CC) $(CFLAGS) $(opt_flag) $^ -o $(out)/$@ -lflint
+	$(CC) $(CFLAGS) $(opt_flag) $^ -o $@ -lflint
 
 b_ntl_%: $$($$(addsuffix $$*_obj, rng)) $(bench_obj) $(build)/b_ntl.o
-	@echo compiled $@
-	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_iter_vs_jump_%: $$($$(addsuffix $$*_obj, rng)) $(objects) $(bench_obj) $(build)/b_iter_vs_jump.o
-	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_strong_scaling_%: $$($$(addsuffix $$*_obj, rng)) $(bench_obj) $(objects) $(build)/b_strong_scaling.o
-	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $(out)/$@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 b_64: $(bench_obj) $(build)/b_64.o
-	$(CC) $(CFLAGS) $(opt_flag) $^ -o $(out)/$@
+	$(CC) $(CFLAGS) $(opt_flag) $^ -o $@
 
 
 # =====================================================================================
 # Building header files which contain the minimal polynomial of each respective rng
 # =====================================================================================
 
-# small helper function for building each headers
+# small helper function for building each header
 define build_header
 	$(CXX) $(CXXFLAGS) $^ $(src)/minpoly.cpp -o $@ $(ntl_flags)
 	./$@
@@ -202,20 +213,17 @@ minpoly%: $$($$(addsuffix $$*_obj, rng))
 # Generic rules for building object files
 # =====================================================================================
 
-build/%.o: %.c | $(build)
+build/%.o: %.c | $(build) 
 	$(CC) $(opt_flag) $(CFLAGS) -c $< -o $@
 
 build/%.o: %.cpp | $(build)
 	$(CXX) $(opt_flag) $(CXXFLAGS) -c $< -o $@
 
-blub:
-	@echo making bin
-	mkdir $(out)
+$(benchout) $(testout): | $(out)
+	mkdir $@
 
-$(build):
-	@echo making build
-	mkdir $(build)
-
+$(out) $(build):
+	mkdir $@
 
 # =====================================================================================
 # Cleaning the build directory
@@ -223,6 +231,7 @@ $(build):
 
 .PHONY: clean
 clean:
-	rm build/*.o
-	rm bin/*.csv
+	rm -r build
+	rm -r bin
+
 
