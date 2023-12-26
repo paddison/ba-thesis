@@ -108,11 +108,6 @@ double exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, si
     return avg;
 }
 
-static 
-void do_benchmark(size_t n_deg, unsigned long long poly_degs[n_deg], F2LinConfig *cfg, 
-                  size_t iterations, size_t repetitions) {
-}
-
 int main(int argc, char* argv[argc + 1]) {  
     MPI_Init(&argc, &argv);
 
@@ -132,7 +127,6 @@ int main(int argc, char* argv[argc + 1]) {
     }
 
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-
 
     if (argc > BUF_MAX + 3) {
         fprintf(stderr, "Too many arguments, only support a maximum of %d.\n", BUF_MAX);
