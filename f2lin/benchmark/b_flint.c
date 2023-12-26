@@ -51,6 +51,7 @@ void init_p_min(nmod_berlekamp_massey_t B) {
 
     nmod_berlekamp_massey_add_points(B, a, state_size);
     nmod_berlekamp_massey_reduce(B);
+    f2lin_rng_generic_destroy(rng);
 }
 
 static
@@ -102,6 +103,7 @@ double benchmark_minimal_polynomial_seq(size_t iterations, size_t repetitions) {
 
     double avg = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
+    f2lin_rng_generic_destroy(rng);
     f2lin_bench_bmpi_destroy(&bmpi);
 
     return avg;

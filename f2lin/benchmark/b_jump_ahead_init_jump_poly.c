@@ -164,7 +164,10 @@ int main(int argc, char* argv[argc + 1]) {
         }
     }
 
-    if (rank == 0) write_results(argv[0], N_DEG * N_JUMPS, result);
+    if (rank == 0) { 
+        write_results(argv[0], N_DEG * N_JUMPS, result);
+        free(result);
+    }
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

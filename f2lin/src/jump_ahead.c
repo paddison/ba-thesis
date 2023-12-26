@@ -233,6 +233,7 @@ F2LinRngGeneric* horner(F2LinRngGeneric* rng, const GF2X* jump_poly) {
     }
 
     f2lin_rng_generic_copy(rng, tmp);
+    f2lin_rng_generic_destroy(tmp);
     return rng;
 }
 
