@@ -116,8 +116,6 @@ verify_min_poly := $(build)/t_verify_min_poly.o
 jump_ahead_algorithms := $(build)/t_jump_ahead_algorithms.o
 
 .SECONDEXPANSION:
-test: CXXFLAGS += -DTEST
-test: CFLAGS += -DTEST
 test: $$(addprefix t_jump_ahead_first_n_, $(rngs)) \
 	  $$(addprefix t_jump_ahead_algorithms_, $(rngs)) \
 	  $$(addprefix t_verify_min_poly_, $(rngs)) \
