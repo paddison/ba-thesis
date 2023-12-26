@@ -95,11 +95,9 @@ char* f2lin_rng_generic_min_poly() {
 }
 #endif
 
-#ifdef TEST
 int f2lin_rng_generic_compare_state(F2LinRngGeneric* lhs, F2LinRngGeneric* rhs) {
     return lhs->state[0] == rhs->state[0] &&
            lhs->state[1] == rhs->state[1] && 
            lhs->state[2] == rhs->state[2] &&   
            lhs->state[3] == rhs->state[3]; 
 }
-#endif

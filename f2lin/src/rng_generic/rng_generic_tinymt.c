@@ -75,9 +75,7 @@ char* f2lin_rng_generic_min_poly() {
 }
 #endif
 
-#ifdef TEST
 int f2lin_rng_generic_compare_state(F2LinRngGeneric* lhs, F2LinRngGeneric* rhs) {
     return lhs->tinymt64.status[0] == rhs->tinymt64.status[0] &&
            lhs->tinymt64.status[1] == rhs->tinymt64.status[1];
 }
-#endif

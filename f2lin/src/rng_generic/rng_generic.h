@@ -31,10 +31,7 @@ void f2lin_rng_generic_gen_n_numbers(F2LinRngGeneric* rng, size_t N, uint64_t *b
 void f2lin_rng_generic_gen_n_numbers(F2LinRngGeneric* rng, size_t N, uint64_t buf[N]);
 #endif
 
-
-#ifdef TEST
 int f2lin_rng_generic_compare_state(F2LinRngGeneric* lhs, F2LinRngGeneric* rhs);
-#endif
 
 #ifndef CALC_MIN_POLY
 char* f2lin_rng_generic_min_poly();
