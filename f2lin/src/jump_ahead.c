@@ -298,17 +298,14 @@ F2LinRngGeneric* sliding_window_decomp(const int Q, F2LinRngGeneric* rng,
 
     //; h1(A) * x, first component in horner's method
     if (decomp_poly->m) {
-        size_t dj = decomp_poly->params[0].d, dj_next;
-        f2lin_rng_generic_copy(tmp, h[decomp_poly->params[0].h]);
+        f2lin_rng_generic_copy(tmp, h[decomp_poly->h[0]]);
 
         for (size_t i = 1; i < decomp_poly->m; ++i) {
-            dj_next = decomp_poly->params[i].d;
-            for (size_t j = 0; j < dj - dj_next; ++j) f2lin_rng_generic_next_state(tmp);
-            f2lin_rng_generic_add(tmp, h[decomp_poly->params[i].h]);
-            dj = dj_next;
+            for (size_t j = 0; j < decomp_poly->d[i - 1] - decomp_poly->d[i]; ++j) f2lin_rng_generic_next_state(tmp);
+            f2lin_rng_generic_add(tmp, h[decomp_poly->h[i]]);
         }
 
-        for (size_t i = 0; i < decomp_poly->params[decomp_poly->m - 1].d; ++i) f2lin_rng_generic_next_state(tmp);
+        for (size_t i = 0; i < decomp_poly->d[decomp_poly->m - 1]; ++i) f2lin_rng_generic_next_state(tmp);
     }
 
     f2lin_rng_generic_add(tmp, h[decomp_poly->hm1]);
