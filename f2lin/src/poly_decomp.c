@@ -21,7 +21,7 @@ static F2LinPolyDecomp* f2lin_poly_decomp_init(int q, int deg) {
 // TODO test this
 F2LinPolyDecomp* f2lin_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const int Q) {
     int i = GF2X_deg(jump_poly);
-    F2LinPolyDecomp* dp = f2lin_poly_decomp2_init_from_gf2x(jump_poly, i);
+    F2LinPolyDecomp* dp = f2lin_poly_decomp_init_from_gf2x(jump_poly, i);
 
     for (; i >= Q; --i) {
         if (GF2X_coeff(jump_poly, i) == 0) continue;
@@ -37,7 +37,7 @@ F2LinPolyDecomp* f2lin_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const i
     return dp;
 }
 
-void f2lin_poly_decomp2_destroy(F2LinPolyDecomp* pd) {
+void f2lin_poly_decomp_destroy(F2LinPolyDecomp* pd) {
     free(pd->h);
     free(pd->d);
     free(pd);
