@@ -84,17 +84,17 @@ uint64_t f2lin_rng_generic_next_state(F2LinRngGeneric* rng) {
 
   if (num < NN - MM){
       y = (state[num] & UM) | (state[num + 1] & LM);
-      state[num] = state[num + MM] ^ (y >> 1) ^ mag02[y & 1UL];
+      state[num] = state[num + MM] ^ (y >> 1) ^ mag02[y & 1ULL];
       rng->mt.mti++;
   }
   else if (num < NN - 1){
       y = (state[num] & UM) | (state[num + 1] & LM);
-      state[num] = state[num + (MM - NN)] ^ (y >> 1) ^ mag02[y & 1UL];
+      state[num] = state[num + (MM - NN)] ^ (y >> 1) ^ mag02[y & 1ULL];
       rng->mt.mti++;
   }
   else if (num == NN - 1){
       y = (state[NN - 1] & UM) | (state[0] & LM);
-      state[NN - 1] = state[MM - 1] ^ (y >> 1) ^ mag02[y % 1UL];
+      state[NN - 1] = state[MM - 1] ^ (y >> 1) ^ mag02[y & 1ULL];
       rng->mt.mti = 0;
   }
 
