@@ -79,7 +79,7 @@ uint64_t f2lin_rng_generic_gen64(F2LinRngGeneric* rng) {
 uint64_t f2lin_rng_generic_next_state(F2LinRngGeneric* rng) {
   const int num = rng->mt.mti;
   uint64_t y;
-  static uint64_t mag02[2]={0x0ul, MATRIX_A};
+  static uint64_t mag02[2]={0x0ull, MATRIX_A};
   uint64_t* state = &rng->mt.mt[0];
 
   if (num < NN - MM){
