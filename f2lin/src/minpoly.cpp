@@ -15,14 +15,13 @@ static void f2lin_init_min_poly(NTL::GF2X& p_min);
 static void f2lin_init_min_poly(NTL::GF2X& p_min) {
 
     const int state_size = f2lin_rng_generic_state_size();
-    const size_t seq_len = 2 * state_size ;
-    std::cout << state_size << std::endl;
+    const size_t seq_len = 2 * state_size;
 
     NTL::vec_GF2 seq(NTL::INIT_SIZE, seq_len);
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
 
     for (size_t i = 0; i < seq_len; ++i) {
-        seq[i] = f2lin_rng_generic_next_state(rng) & 0x01ul;
+        seq[i] = f2lin_rng_generic_next_state(rng) & 1ull;
     }
 
     NTL::MinPolySeq(p_min, seq, state_size);
@@ -33,7 +32,9 @@ static void f2lin_init_min_poly(NTL::GF2X& p_min) {
 // Note that the string is NOT null terminated
 static char* f2lin_minpoly_to_string(NTL::GF2X& p_min) {
     int deg = NTL::deg(p_min);
-    char* buf = (char*) calloc(sizeof(char), deg);
+    std::cout << deg << std::endl;
+    
+    char* buf = (char*) calloc(sizeof(char), deg + 1);
 
     for (int i = deg; i >= 0; --i) { 
         NTL::coeff(p_min, i) == 1 ? buf[i] = '1' : buf[i] = '0';

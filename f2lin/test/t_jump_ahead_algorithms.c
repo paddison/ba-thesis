@@ -25,6 +25,8 @@ static int test_jump(size_t jump_size, F2LinConfig* c) {
 
     printf("actual: %llu\t expected: %llu\n", actual, expected);
 
+    f2lin_rng_generic_destroy(jump);
+    f2lin_rng_generic_destroy(iter);
     return actual == expected;
 }
 

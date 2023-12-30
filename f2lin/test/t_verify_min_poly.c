@@ -5,7 +5,7 @@
 #include "rng_generic/rng_generic.h"
 
 int tests_run = 0;
-// calculate jump polynomial by evaluating with horners method
+
 static F2LinRngGeneric* horner(F2LinRngGeneric* rng, GF2X* jump_poly) {
     F2LinRngGeneric* tmp = f2lin_rng_generic_init_zero();  
     size_t i = GF2X_deg(jump_poly);

@@ -15,6 +15,8 @@ lib_dir := -L ${HOME}/.local/lib
 
 CXXFLAGS := -std=c++11 $(include_dirs)  $(lib_dir) -pthread
 CFLAGS := $(include_dirs) $(lib_dir) -pthread
+CC := clang
+CXX := clang++
 ntl_flags := -lntl -lgmp -lgf2x
 opt_flag := -g
 

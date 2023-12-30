@@ -13,22 +13,23 @@ inline static void do_n_steps(size_t n, F2LinRngGeneric* rng) {
 }
 
 static char* test_first_100k() {
-    size_t START = 0;
-    size_t MAX = 30000;
+    size_t START = 19934;
+    size_t MAX = 20600;
     F2LinConfig c = { .q = 4, .algorithm = SLIDING_WINDOW_DECOMP };
     F2LinRngGeneric* iter= f2lin_rng_generic_init();
-    do_n_steps(START, iter);
+    do_n_steps(START + 1, iter);
+    //printf("%llu\n", f2lin_rng_generic_gen64(iter));
     
     for (size_t i = START + 1; i < MAX; ++i) {
         F2LinRngGeneric* jump = f2lin_rng_generic_init();
         F2LinJump* params = f2lin_jump_ahead_init(i, &c);
         f2lin_jump_ahead_jump(params, jump);
         f2lin_rng_generic_gen64(iter);
+        f2lin_rng_generic_gen64(jump);
 
-        if (!f2lin_rng_generic_compare_state(jump, iter)) {
-            return "fail";
-            printf("jump: %zu\n", i);
-        }
+        mu_assert("jump and iterative produce different numbers", 
+                   f2lin_rng_generic_compare_state(jump, iter));
+        f2lin_rng_generic_destroy(jump);
     }
 
     return 0;

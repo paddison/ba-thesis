@@ -76,6 +76,7 @@ uint64_t mt_genrand64_int64(MT* mt)
     uint64_t* state = (uint64_t*) &mt->mt[0];
 
     if (mt->mti >= NN) { /* generate NN words at one time */
+        printf("twist\n");
 
         /* if init_genrand64() has not been called, */
         /* a default initial seed is used     */

@@ -17,7 +17,7 @@ void write_results(char* exec_name, size_t N, unsigned long long *jumps, double 
                    double minpoly, double minpoly_seq) {
     char* fname;
     FILE* f;
-    char* mp = "b_minpoly_flint.csv";
+    char* mp = "bin/bench/b_minpoly_ntl.csv";
 
     asprintf(&fname, "%s.csv", exec_name);
     f = fopen(fname, "w");
@@ -26,11 +26,11 @@ void write_results(char* exec_name, size_t N, unsigned long long *jumps, double 
     for (size_t i = 0; i < N; ++i) {
         fprintf(f, "%llu,%5.2e\n", jumps[i], results[i]);
     }
+
     freopen(mp, "a", f);
-    fclose(f);
-    printf("hallo");
     fprintf(f, "state_size,minpoly,minpoly_seq\n");
     fprintf(f, "%zu,%5.2e,%5.2e\n", f2lin_rng_generic_state_size(), minpoly, minpoly_seq);
+
     free(fname);
     fclose(f);
 }

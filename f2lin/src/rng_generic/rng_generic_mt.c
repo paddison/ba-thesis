@@ -32,19 +32,9 @@ F2LinRngGeneric* f2lin_rng_generic_copy(F2LinRngGeneric* dest, const F2LinRngGen
 }
 
 F2LinRngGeneric* f2lin_rng_generic_add(F2LinRngGeneric* lhs, const F2LinRngGeneric* rhs) {
-    // mersenne twister's state stores a pointer to 32 bit words in its
-    // internal state. this means the states of lhs and rhs might be at 
-    // different points in the rotation. when adding the states, we need 
-    // to make sure that we use the right rotation
-    //
-    // SFMT_N64 is the number of 64 bit words
+    /* taken from original implementation of the authors */
 
-    // we add the states together in 64 bit words. the pointer to the internal
-    // state needs to be even and divided by 2
-
-    // store indice extra
-
-    const size_t plhs = lhs->mt.mti, prhs = rhs->mt.mti / 2, len = NN;
+    const size_t plhs = lhs->mt.mti, prhs = rhs->mt.mti, len = NN;
     size_t i = 0;
     // represent internal state as 64 bit words
     uint64_t* slhs = &lhs->mt.mt[0];
@@ -73,32 +63,38 @@ F2LinRngGeneric* f2lin_rng_generic_add(F2LinRngGeneric* lhs, const F2LinRngGener
 }
 
 uint64_t f2lin_rng_generic_gen64(F2LinRngGeneric* rng) {
-    return mt_genrand64_int64(&rng->mt);
+    //return mt_genrand64_int64(&rng->mt);
+    f2lin_rng_generic_next_state(rng);
+    uint64_t ret = rng->mt.mt[rng->mt.mti];
+
+    ret ^= (ret >> 29) & 0x5555555555555555ULL;
+    ret ^= (ret << 17) & 0x71D67FFFEDA60000ULL;
+    ret ^= (ret << 37) & 0xFFF7EEE000000000ULL;
+    ret ^= (ret >> 43);
+    return ret;
 }
 
 uint64_t f2lin_rng_generic_next_state(F2LinRngGeneric* rng) {
-  const int num = rng->mt.mti;
-  uint64_t y;
-  static uint64_t mag02[2]={0x0ull, MATRIX_A};
-  uint64_t* state = &rng->mt.mt[0];
-
-  if (num < NN - MM){
-      y = (state[num] & UM) | (state[num + 1] & LM);
-      state[num] = state[num + MM] ^ (y >> 1) ^ mag02[y & 1ULL];
-      rng->mt.mti++;
-  }
-  else if (num < NN - 1){
-      y = (state[num] & UM) | (state[num + 1] & LM);
-      state[num] = state[num + (MM - NN)] ^ (y >> 1) ^ mag02[y & 1ULL];
-      rng->mt.mti++;
-  }
-  else if (num == NN - 1){
-      y = (state[NN - 1] & UM) | (state[0] & LM);
-      state[NN - 1] = state[MM - 1] ^ (y >> 1) ^ mag02[y & 1ULL];
-      rng->mt.mti = 0;
-  }
-
-  return rng->mt.mt[num];
+    const int num = rng->mt.mti;
+    uint64_t y;
+    uint64_t mat[2]={0ull, MATRIX_A};
+    uint64_t* state = &rng->mt.mt[0];
+  
+    if (num < NN - MM){
+        y = (state[num] & UM) | (state[num + 1] & LM);
+        state[num] = state[num + MM] ^ (y >> 1) ^ mat[y & 1ULL];
+        rng->mt.mti++;
+    } else if (num < NN - 1){
+        y = (state[num] & UM) | (state[num + 1] & LM);
+        state[num] = state[num + (MM - NN)] ^ (y >> 1) ^ mat[y & 1ULL];
+        rng->mt.mti++;
+    } else if (num == NN - 1){
+        y = (state[NN - 1] & UM) | (state[0] & LM);
+        state[NN - 1] = state[MM - 1] ^ (y >> 1) ^ mat[y & 1ULL];
+        rng->mt.mti = 0;
+    }
+  
+    return state[num];
 }
 
 void f2lin_rng_generic_gen_n_numbers(F2LinRngGeneric* rng, size_t N, uint64_t buf[N]) {
@@ -126,5 +122,5 @@ char* f2lin_rng_generic_min_poly() {
 #endif
 
 int f2lin_rng_generic_compare_state(F2LinRngGeneric* lhs, F2LinRngGeneric* rhs) {
-    return lhs->mt.mt[lhs->mt.mti] == rhs->mt.mt[lhs->mt.mti];
+    return lhs->mt.mt[lhs->mt.mti] == rhs->mt.mt[rhs->mt.mti];
 } 
