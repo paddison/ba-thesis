@@ -6,20 +6,13 @@
 #include <inttypes.h>
 #include "gf2x_wrapper.h"
 
-typedef struct F2LinPolyDecompParam F2LinPolyDecompParam;
-
-struct F2LinPolyDecompParam {
-   size_t d;
-   uint16_t h;
-};
-
 typedef struct F2LinPolyDecomp F2LinPolyDecomp;
-
 struct F2LinPolyDecomp {
-    F2LinPolyDecompParam* params; 
-    size_t cap;
-    size_t m;           // m is the length
+    uint16_t* h;
+    size_t* d;
+    size_t m;
     uint16_t hm1;
+    size_t cap;
 };
 
 /**
@@ -27,7 +20,7 @@ struct F2LinPolyDecomp {
  *
  * @param decomp_poly can not be 0
  */
-F2LinPolyDecomp* f2lin_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const size_t Q);
+F2LinPolyDecomp* f2lin_poly_decomp_init_from_gf2x(const GF2X* jump_poly, const int Q);
 
 /**
  * Destroys @param decomp_poly, freeing any space allocated. 

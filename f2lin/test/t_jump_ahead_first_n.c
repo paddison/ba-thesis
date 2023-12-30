@@ -14,7 +14,7 @@ inline static void do_n_steps(size_t n, F2LinRngGeneric* rng) {
 
 static char* test_first_100k() {
     size_t START = 0;
-    size_t MAX = 635;
+    size_t MAX = 30000;
     F2LinConfig c = { .q = 4, .algorithm = SLIDING_WINDOW_DECOMP };
     F2LinRngGeneric* iter= f2lin_rng_generic_init();
     do_n_steps(START, iter);
@@ -26,6 +26,7 @@ static char* test_first_100k() {
         f2lin_rng_generic_gen64(iter);
 
         if (!f2lin_rng_generic_compare_state(jump, iter)) {
+            return "fail";
             printf("jump: %zu\n", i);
         }
     }

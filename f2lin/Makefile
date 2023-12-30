@@ -16,7 +16,7 @@ lib_dir := -L ${HOME}/.local/lib
 CXXFLAGS := -std=c++11 $(include_dirs)  $(lib_dir) -pthread
 CFLAGS := $(include_dirs) $(lib_dir) -pthread
 ntl_flags := -lntl -lgmp -lgf2x
-opt_flag := -g3
+opt_flag := -g
 
 # directory structure
 #-----------------------------------------
@@ -133,7 +133,7 @@ test: $$(addprefix t_jump_ahead_first_n_, $(rngs)) \
 t_jump_ahead_first_n_%: $$($$(addsuffix $$*_obj, rng)) \
 						$(objects) \
 						$(jump_ahead_first_n)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 # Testing jump algorithms
 #-----------------------------------------
@@ -141,7 +141,7 @@ t_jump_ahead_first_n_%: $$($$(addsuffix $$*_obj, rng)) \
 t_jump_ahead_algorithms_%: $$($$(addsuffix $$*_obj, rng)) \
 						   $(objects) \
 						   $(jump_ahead_algorithms)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 # Verifying minimal polynomials 
 #-----------------------------------------
@@ -149,7 +149,7 @@ t_jump_ahead_algorithms_%: $$($$(addsuffix $$*_obj, rng)) \
 t_verify_min_poly_%: $$($$(addsuffix $$*_obj, rng)) \
 					 $(objects) \
 					 $(verify_min_poly)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(ntl_flags)
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
 
 # =====================================================================================

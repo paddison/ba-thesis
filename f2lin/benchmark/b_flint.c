@@ -227,7 +227,7 @@ int main(int argc, char* argv[argc + 1]) {
         results[i].jp = benchmark_jump_polynomial(iterations, repetitions, jumps[i]);
         results[i].init = benchmark_jump_polynomial_init(iterations, repetitions, jumps[i]);
         if (rank == 0) printf("jump: %llu\tinit: %5.2e\tjp: %5.2e\n", 
-                              jumps[i], results[i].jp, results[i].init);
+                              jumps[i], results[i].init, results[i].jp);
     }
 
     double minpoly = benchmark_minimal_polynomial(iterations, repetitions);

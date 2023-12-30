@@ -17,19 +17,22 @@ void write_results(char* exec_name, size_t N, unsigned long long *jumps, double 
                    double minpoly, double minpoly_seq) {
     char* fname;
     FILE* f;
+    char* mp = "b_minpoly_flint.csv";
 
     asprintf(&fname, "%s.csv", exec_name);
-    f = fopen(fname, "a");
+    f = fopen(fname, "w");
     fprintf(f, "jump,jumppoly\n");
 
     for (size_t i = 0; i < N; ++i) {
         fprintf(f, "%llu,%5.2e\n", jumps[i], results[i]);
     }
-
+    freopen(mp, "a", f);
+    fclose(f);
+    printf("hallo");
     fprintf(f, "state_size,minpoly,minpoly_seq\n");
     fprintf(f, "%zu,%5.2e,%5.2e\n", f2lin_rng_generic_state_size(), minpoly, minpoly_seq);
-    fclose(f);
     free(fname);
+    fclose(f);
 }
 
 static
@@ -73,7 +76,7 @@ double benchmark_minimal_polynomial_seq(size_t iterations, size_t repetitions) {
         // measure how long it takes to collect data for state
         for (size_t i = 0; i < iterations; ++i) {
             for (size_t j = 0; j < state_size * 2; ++j) {
-                seq[i] = f2lin_rng_generic_gen64(rng) & 0x01ul;
+                seq[j] = f2lin_rng_generic_gen64(rng) & 0x01ul;
             }
         }
         times[1] = MPI_Wtime();
