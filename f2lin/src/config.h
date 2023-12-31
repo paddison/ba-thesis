@@ -21,7 +21,7 @@ typedef struct F2LinConfig F2LinConfig;
 
 struct F2LinConfig {
     enum F2LinJumpAlgorithm algorithm;
-    unsigned q;
+    int q;
 };
 
 #endif

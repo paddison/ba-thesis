@@ -79,16 +79,23 @@ double exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, si
 
     F2LinRngGeneric* rng = f2lin_rng_generic_init();
     F2LinJump* jp = f2lin_jump_ahead_init(poly_deg, cfg);
+    GF2X* rand = f2lin_poly_rand_init(poly_deg);
 
-    GF2X_zero_destroy(jp->jump_poly);
-    
-    jp->jump_poly = f2lin_poly_rand_init(poly_deg);
-
-    if (cfg->algorithm != HORNER) {
-        f2lin_poly_decomp_destroy(jp->decomp_poly);
-        jp->decomp_poly = f2lin_poly_decomp_init_from_gf2x(jp->jump_poly, jp->q);
+    switch (jp->algorithm) {
+        case HORNER:
+            GF2X_zero_destroy(jp->jp.horner);
+            jp->jp.horner = rand;
+            break;
+        case SLIDING_WINDOW:
+            GF2X_zero_destroy(jp->jp.sw.jp);
+            jp->jp.sw.jp = rand;
+            break;
+        default:
+            f2lin_poly_decomp_destroy(jp->jp.swd.pd);
+            jp->jp.swd.pd = f2lin_poly_decomp_init_from_gf2x(rand, jp->jp.swd.q);
+            GF2X_zero_destroy(rand);
     }
-
+    
     for (size_t rep = 0; rep < repetitions; ++rep) {
         double start, end;
         start = MPI_Wtime();

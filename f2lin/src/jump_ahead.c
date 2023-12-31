@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "config.h"
 #include "gray.h"
 #include "jump_ahead.h"
 #include "gf2x_wrapper.h"
@@ -15,8 +16,16 @@
 // functions used for initialization
 static 
 GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size);
+
+static 
+F2LinRngGeneric** init_y(int q); 
+
 static 
 void init_decomp_poly();
+
+static 
+void destroy_y(F2LinRngGeneric** y, int q);
+
 static 
 GF2X* load_min_poly();
 
@@ -59,66 +68,78 @@ F2LinJump* f2lin_jump_ahead_init(size_t jump_size, F2LinConfig* cfg) {
     GF2X* min_poly = load_min_poly();
     F2LinJump* jump_params = calloc(1, sizeof(F2LinJump));
     F2LinConfig def = { .q = Q_DEFAULT, .algorithm = ALGORITHM_DEFAULT };
+    GF2X* jump_poly = init_jump_poly(min_poly, jump_size);
+    union F2LinJumpPoly jp;
 
     // verify config
     if (!cfg) cfg = &def;
     else verify_config(cfg);
 
     // initialize config values
-    jump_params->q = cfg->q;
     jump_params->algorithm = cfg->algorithm;
-    jump_params->jump_poly = init_jump_poly(min_poly, jump_size);
 
-    if (cfg->algorithm == HORNER) {
-        jump_params->h = 0;
-        jump_params->decomp_poly = 0;
-    } else {
-        jump_params->h = calloc(sizeof(F2LinRngGeneric*), (1 << jump_params->q));
-        for (size_t i = 0; i < (1 << jump_params->q); ++i) {
-            jump_params->h[i] = f2lin_rng_generic_init();
-        }
-        jump_params->decomp_poly = f2lin_poly_decomp_init_from_gf2x(jump_params->jump_poly, jump_params->q);
+    switch (jump_params->algorithm) {
+        case HORNER:
+            jp.horner = jump_poly; 
+            break;
+        case SLIDING_WINDOW:
+            jp.sw = (F2LinJumpSW) {
+                .q = cfg->q,
+                .y = init_y(cfg->q),
+                .jp = jump_poly,
+            };
+            break;
+        default:
+            jp.swd = (F2LinJumpSWD) {
+                .q = cfg->q,
+                .y = init_y(cfg->q),
+                .pd = f2lin_poly_decomp_init_from_gf2x(jump_poly, cfg->q),
+            };
+            GF2X_zero_destroy(jump_poly);
     }
 
+    jump_params->jp = jp;
     GF2X_zero_destroy(min_poly);
     return jump_params;
 }
 
-
 F2LinRngGeneric* f2lin_jump_ahead_jump(F2LinJump* jump_params, F2LinRngGeneric* rng) {
-    if (jump_params->algorithm == HORNER) return horner(rng, jump_params->jump_poly);
-
-    init_sliding_window(jump_params->q, jump_params->h, rng);
-
-    if (jump_params->algorithm == SLIDING_WINDOW) {
-        return sliding_window(jump_params->q, 
-                                     rng, 
-                                     jump_params->jump_poly, 
-                                     jump_params->h); 
-    } else { 
-        return sliding_window_decomp(jump_params->q, 
-                                            rng, 
-                                            jump_params->decomp_poly, 
-                                            jump_params->h);
+    switch (jump_params->algorithm) {
+        case HORNER: 
+            return horner(rng, jump_params->jp.horner);
+        case SLIDING_WINDOW: {
+            F2LinJumpSW* sw = &jump_params->jp.sw;
+            init_sliding_window(sw->q, sw->y, rng);
+            return sliding_window(sw->q, rng, sw->jp, sw->y);
+        }
+        default: {
+            F2LinJumpSWD* swd = &jump_params->jp.swd;
+            init_sliding_window(swd->q, swd->y, rng);
+            return sliding_window_decomp(swd->q, rng, swd->pd, swd->y);
+        }
     }
 }
 
 void f2lin_jump_ahead_destroy(F2LinJump* jump_params) {
-    GF2X_zero_destroy(jump_params->jump_poly);
-    jump_params->jump_poly = 0;
-
-    if (jump_params->algorithm != HORNER) {
-        f2lin_poly_decomp_destroy(jump_params->decomp_poly);
-        jump_params->decomp_poly = 0;
-
-        for (size_t i = 0; i < (1 << jump_params->q); ++i) {
-            f2lin_rng_generic_destroy(jump_params->h[i]);
+    switch (jump_params->algorithm) {
+        case HORNER: 
+            GF2X_zero_destroy(jump_params->jp.horner); 
+            break;
+        case SLIDING_WINDOW: {
+            F2LinJumpSW* sw = &jump_params->jp.sw;
+            GF2X_zero_destroy(sw->jp);
+            destroy_y(sw->y, sw->q);
+            break;
         }
-
-        free(jump_params->h);
-        jump_params->h = 0;
+        default: {
+            F2LinJumpSWD* swd = &jump_params->jp.swd;
+            f2lin_poly_decomp_destroy(swd->pd);
+            destroy_y(swd->y, swd->q);
+        }
     }
+
     free(jump_params);
+    jump_params = 0;
 }
 
 /*------------------------------------------------------ 
@@ -138,6 +159,23 @@ GF2X* init_jump_poly(const GF2X* min_poly, const size_t jump_size) {
     GF2X_zero_destroy(x);
     GF2XModulus_destroy(minimal_poly_mod);
     return jump_poly;
+}
+
+static 
+F2LinRngGeneric** init_y(int q) {
+    F2LinRngGeneric** y = calloc(sizeof(F2LinRngGeneric*), (1 << q));
+    for (size_t i = 0; i < (1 << q); ++i) {
+        y[i] = f2lin_rng_generic_init();
+    }
+    return y;
+}
+
+static 
+void destroy_y(F2LinRngGeneric** y, int q) {
+    for (size_t i = 0; i < (1 << q); ++i) {
+        f2lin_rng_generic_destroy(y[i]);
+    }
+    free(y);
 }
 
 static 
