@@ -63,9 +63,7 @@ F2LinRngGeneric* f2lin_rng_generic_add(F2LinRngGeneric* lhs, const F2LinRngGener
 }
 
 uint64_t f2lin_rng_generic_gen64(F2LinRngGeneric* rng) {
-    //return mt_genrand64_int64(&rng->mt);
-    f2lin_rng_generic_next_state(rng);
-    uint64_t ret = rng->mt.mt[rng->mt.mti];
+    uint64_t ret = f2lin_rng_generic_next_state(rng);
 
     ret ^= (ret >> 29) & 0x5555555555555555ULL;
     ret ^= (ret << 17) & 0x71D67FFFEDA60000ULL;
