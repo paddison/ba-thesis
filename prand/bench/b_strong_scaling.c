@@ -45,11 +45,12 @@ int main(int argc, char* argv[argc + 1]) {
         times[0] = MPI_Wtime();
         for (size_t i = 0; i < iterations; ++i) {
             prand48_init();
-            uint16_t state[3];
+            Prand48* prand = prand48_get();
 
-            prand48_jump(state, jump_size);
+            prand48_jump_abs(prand, jump_size);
 
-            for (size_t j = 0; j < ppsize; ++j) pdrand48(state);
+            for (size_t j = 0; j < ppsize; ++j) pdrand48(prand);
+            prand48_destroy(prand);
         }
         times[1] = MPI_Wtime();
         measurements[rep] = times[1] - times[0];
@@ -65,12 +66,12 @@ int main(int argc, char* argv[argc + 1]) {
         char* fname;
         FILE* f;
         double avg = 
-            f2lin_tools_get_result(repetitions * gsize, total) / (double) iterations;
+            f2lin_tools_get_result(repetitions * gsize, total, MED) / (double) iterations;
 
         asprintf(&fname, "%s_%zu.csv", argv[0], psize);
 
         if (access(fname, F_OK) == -1) {
-            f = fopen(fname, "a");
+            f = fopen(fname, "w");
             fprintf(f, "nprocs,time\n");
         } else {
             f = fopen(fname, "a");

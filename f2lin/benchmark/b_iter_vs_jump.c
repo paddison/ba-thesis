@@ -24,7 +24,7 @@ void write_results(char exec_name[static 1], size_t N,
     FILE* f;
 
     asprintf(&fname, "%s.csv", exec_name);
-    f = fopen(fname, "a");
+    f = fopen(fname, "w");
     fprintf(f, "jump,jump_with_init,jump_no_init,iterative\n");
 
     for (size_t i = 0; i < N; ++i) {

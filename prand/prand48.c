@@ -1,7 +1,31 @@
 #include "prand48.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 
+struct Prand48 {
+    uint16_t buf[3];
+};
+
+/**
+ * @brief the global state of prand. Numbers are generated using the
+ * formula r(n + 1) = a * r(n) + c mod m. 
+ * m always equals 2^48, while default values the fields are:
+ * a: 0x5deece66d (25214903917) 
+ * c: 0xb (11)
+ *
+ * It can be initialized using ::prand48_init, ::prand48_init_48,
+ * ::prand48_init_32 or ::prand_init_man
+ */
+typedef struct PrandState PrandState;
+
+struct PrandState {
+    uint16_t seed[3];
+    uint16_t c;
+    uint64_t a;
+    bool init;
+};
 /**************************
  * Internal Functionality *
  **************************/
@@ -9,11 +33,13 @@
 /* Read only state of the rng */
 static PrandState state = { 0 };
 
-static uint64_t __iterate(uint64_t r, uint64_t a, uint16_t c) {
+static inline
+uint64_t __iterate(uint64_t r, uint64_t a, uint16_t c) {
     return (a * r + c) % M;
 }
 
-static void __prand_next(uint16_t buf[3]) {
+static inline
+void __prand_next(uint16_t buf[3]) {
     uint64_t r = SPLIT_BUF(buf);
 
     r = __iterate(r, state.a, state.c);
@@ -42,51 +68,6 @@ static uint64_t __powmod(uint64_t base, uint64_t exp, uint64_t mod) {
     return result;
 }
 
-static uint64_t __ext_euclid(uint64_t a, uint64_t mod) {
-    uint64_t q, t, r, new_t, new_r, tmp;
-
-    t = 0;
-    r = mod;
-    new_t = 1;
-    new_r = a;
-
-    while (new_r != 0) {
-        q = r / new_r;
-
-        tmp = new_t;
-        new_t = t - q * new_t;
-        t = tmp;
-        
-        tmp = new_r;
-        new_r = r - q * new_r;
-        r = tmp;
-    }
-
-    if (r > 1) return -1;
-    if (t < 0) return t + mod;
-
-    return t;
-}
-
-static uint64_t __seek_intern(uint64_t a, uint64_t c, uint64_t n, uint64_t r) {
-    uint64_t a_1, a_pow_n, a_pow_n_1, inv;
-
-    a_pow_n = __powmod(a, n, M);
-    a_pow_n_1 = (a_pow_n - 1) / 4;
-
-    a_1 = (a - 1) / 4;
-    
-    assert(a_1 % 2 == 1);
-
-    inv = __ext_euclid(a_1, M);
-
-    assert((a_1 * inv) % M == 1);
-
-    if (inv == -1) return -1;
-
-    return (a_pow_n_1 * inv * c + a_pow_n * r) % M;
-}
-
 /*
  * Calculates c * sum_(i=0)to(k-1):(a^i)
  */
@@ -102,11 +83,13 @@ static uint64_t __algorithm_c(uint64_t c, uint64_t g, uint64_t n) {
     return C;
 }
 
-static uint64_t __seek_intern2(uint64_t a, uint64_t c, uint64_t n, uint64_t r) {
+static uint64_t __jump_intern(uint64_t a, uint64_t c, uint64_t n, uint64_t r) {
     // g is a
     // evaluate the first term
     uint64_t first_term = (r * __powmod(a, n, M)) % M;
-    uint64_t second_term = __algorithm_c(c, a, n);
+    uint64_t second_term;
+    if (c) second_term = __algorithm_c(c, a, n);
+    else second_term = 0;
     return (first_term + second_term) % M;
 }
 
@@ -180,47 +163,73 @@ void prand48_init_man(uint16_t seed[3], uint64_t a, uint16_t c) {
     state.init = true;
 }
 
-void prand48_jump(uint16_t buf[3], uint64_t n) {
+Prand48* prand48_get() {
+    Prand48* prand = 0;
     if (!state.init) {
-        fprintf(stderr, "Need to initialize before calling seek()\n");
-        return;
+        fprintf(stderr, "Warning: State not initialized yet, returning 0!\n");
+        return prand;
     }
+    prand = calloc(1, sizeof(Prand48));
+    prand->buf[0] = state.seed[0];
+    prand->buf[1] = state.seed[1];
+    prand->buf[2] = state.seed[2];
+    
+    return prand;
+}
 
-    buf[0] = state.seed[0];
-    buf[1] = state.seed[1];
-    buf[2] = state.seed[2];
+void prand48_destroy(Prand48* prand) {
+    free(prand); 
+}
 
-    uint64_t r = SPLIT_BUF(buf);
-    r = __seek_intern2(state.a, state.c, n, r);
+void prand48_jump_abs(Prand48* prand, uint64_t n) {
+    prand->buf[0] = state.seed[0];
+    prand->buf[1] = state.seed[1];
+    prand->buf[2] = state.seed[2];
+
+    uint64_t r = SPLIT_BUF(prand->buf);
+    r = __jump_intern(state.a, state.c, n, r);
 
     assert(r < ((uint64_t ) 1 << 48));
 
-    MERGE_BUF(buf, r);
+    MERGE_BUF(prand->buf, r);
 } 
 
-double pdrand48(uint16_t buf[3]) {
-    if (!buf || !state.init) return -1.; 
+void prand48_jump_rel(Prand48* prand, uint64_t n) {
+    uint64_t r = SPLIT_BUF(prand->buf);
+    r = __jump_intern(state.a, state.c, n, r);
+
+    assert(r < ((uint64_t ) 1 << 48));
+
+    MERGE_BUF(prand->buf, r);
+}
+
+double pdrand48(Prand48* prand) {
+    if (!prand || !state.init) return -1.; 
 
     union IEEE754Double ret;
 
-    __prand_next(buf);
-    IEEE754Double_new(&ret, 0, 0x3ff, buf);
+    __prand_next(prand->buf);
+    IEEE754Double_new(&ret, 0, 0x3ff, prand->buf);
 
     return ret.d - 1.0;
 }
 
-uint32_t plrand48(uint16_t buf[3]) {
-    if (!buf || !state.init) return -1;
+uint32_t plrand48(Prand48* prand) {
+    if (!prand || !state.init) return -1;
 
-    __prand_next(buf);
-    uint32_t ret = ((uint32_t) buf[2] << 15) | (buf[1] >> 1);
+    __prand_next(prand->buf);
+    uint32_t ret = ((uint32_t) prand->buf[2] << 15) | (prand->buf[1] >> 1);
     return ret;
 }
 
-int32_t pmrand48(uint16_t buf[3]) {
-    if (!buf || !state.init) return -1;
+int32_t pmrand48(Prand48* prand) {
+    if (!prand || !state.init) return -1;
 
-    __prand_next(buf);
-    int32_t ret = ((int32_t) buf[2] << 16) | buf[1];
+    __prand_next(prand->buf);
+    int32_t ret = ((int32_t) prand->buf[2] << 16) | prand->buf[1];
     return ret;
+}
+
+void prand48_next(Prand48* prand) {
+   __prand_next(prand->buf); 
 }

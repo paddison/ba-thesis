@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 #define Q_MAX 10
-#define Q_DEFAULT 4
+#define Q_DEFAULT 6
 #define ALGORITHM_DEFAULT SLIDING_WINDOW_DECOMP
 
 /**
@@ -10,7 +10,7 @@
  * Default is SLIDING_WINDOW.
  */
 enum F2LinJumpAlgorithm {
-    DEFAULT = 0, HORNER = 1, SLIDING_WINDOW = 2, SLIDING_WINDOW_DECOMP = 3, 
+    HORNER = 0, SLIDING_WINDOW = 1, SLIDING_WINDOW_DECOMP = 2, 
 };
 
 /**

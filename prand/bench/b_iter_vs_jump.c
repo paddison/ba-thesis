@@ -18,7 +18,7 @@ void write_results(char exec_name[static 1], size_t N, unsigned long long jumps[
     FILE* f;
 
     asprintf(&fname, "%s.csv", exec_name);
-    f = fopen(fname, "a");
+    f = fopen(fname, "w");
     fprintf(f, "jumpsize,jump,iter\n");
 
     for (size_t i = 0; i < N; ++i) {
@@ -34,14 +34,15 @@ static
 double bench_jump(size_t iterations, size_t repetitions, unsigned long long jump) {
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
     double times[2];
-    uint16_t state[3];
+
     prand48_init();
+    Prand48* prand = prand48_get();
 
     for (size_t rep = 0; rep < repetitions; ++rep) {
         times[0] = MPI_Wtime();
         for (size_t i = 0; i < iterations; ++i) {
             /* the thing we want to benchmark */
-            prand48_jump(state, jump);
+            prand48_jump_abs(prand, jump);
         }
         times[1] = MPI_Wtime();
 
@@ -50,6 +51,7 @@ double bench_jump(size_t iterations, size_t repetitions, unsigned long long jump
 
     double res = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
+    prand48_destroy(prand);
     f2lin_bench_bmpi_destroy(&bmpi);
     
     return res;
@@ -60,13 +62,13 @@ double bench_iter(size_t iterations, size_t repetitions, unsigned long long jump
     F2LinBMPI bmpi = f2lin_bench_bmpi_init(repetitions);
     double times[2];
     uint16_t state[3];
-
     prand48_init();
+    Prand48* prand = prand48_get();
 
     for (size_t rep = 0; rep < repetitions; ++rep) {
         times[0] = MPI_Wtime();
         for (size_t i = 0; i < iterations; ++i) {
-            for (size_t j = 0; j < jump; ++j) pdrand48(state); 
+            for (size_t j = 0; j < jump; ++j) prand48_next(prand); 
         }
         times[1] = MPI_Wtime();
 
@@ -75,6 +77,7 @@ double bench_iter(size_t iterations, size_t repetitions, unsigned long long jump
 
     double res = f2lin_bench_bmpi_eval(&bmpi) / (double) iterations;
 
+    prand48_destroy(prand);
     f2lin_bench_bmpi_destroy(&bmpi);
     return res;
 }
@@ -105,7 +108,7 @@ int main(int argc, char* argv[argc + 1]) {
         double avg_jump = bench_jump(iterations, repetitions, buf[i]);
 
         if (rank == ROOT) {
-            printf("jump_size: %10llu\tjump: %5.2e\t%5.2e\n", 
+            printf("jump_size: %10llu\tjump: %5.2e\titer: %5.2e\n", 
                    buf[i], avg_jump, avg_iter);
             results[i].jp = avg_jump;
             results[i].iter = avg_iter;

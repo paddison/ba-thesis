@@ -1,7 +1,7 @@
 #include "tools.h"
 #include <stdio.h>
 
-#define N 2
+#define N 4.0
 
 /* 
  * Forward Declarations 
@@ -27,7 +27,7 @@ double average(const size_t len, const double sanitized[len]);
 /* 
  * Header implementations 
  */
-double f2lin_tools_get_result(const size_t len, double data[len]) {
+double f2lin_tools_get_result(const size_t len, double data[len], enum ResType rtype) {
     // sort the data
     double med, mad;
     size_t sanitized_len;
@@ -41,6 +41,7 @@ double f2lin_tools_get_result(const size_t len, double data[len]) {
     qsort(data, len, sizeof(double), cmp_double);
 
     med = median(len, data);
+    if (rtype == MED) return med;
     mad = median_absolute_deviation(len, data, med);
     sanitized_len = remove_outliers(len, data, sanitized, mad, med);
 
@@ -77,7 +78,7 @@ double median_absolute_deviation(const size_t len, const double data[len],
 double remove_outliers(const size_t len, const double data[len], double sanitized[len], 
                          const double mad, const double med) {
     size_t sanitized_len = 0;
-    size_t range = mad * N;
+    double range = mad * N;
 
     for (size_t i = 0; i < len; ++i) {
         if (data[i] < med - range || data[i] > med + range) continue;

@@ -29,7 +29,7 @@ void write_results(char exec_name[static 1], size_t N, unsigned long long degs[N
         FILE* f;
 
         asprintf(&fname, "%s.csv", exec_name);
-        f = fopen(fname, "a");
+        f = fopen(fname, "w");
         fprintf(f, "deg,2,3,4,5,6,7,8,9,10\n");
 
         for (size_t i = 0; i < N; ++i) {

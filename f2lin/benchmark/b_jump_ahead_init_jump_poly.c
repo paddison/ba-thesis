@@ -29,7 +29,7 @@ void write_results(char exec_name[static 1], size_t N, data results[N]) {
     FILE* f;
 
     asprintf(&fname, "%s.csv", exec_name);
-    f = fopen(fname, "a");
+    f = fopen(fname, "w");
 
     fprintf(f, "deg,jump,jumppoly,decomppoly\n");
 

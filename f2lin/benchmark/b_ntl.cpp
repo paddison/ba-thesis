@@ -17,9 +17,10 @@ void write_results(char* exec_name, size_t N, unsigned long long *jumps, double 
                    double minpoly, double minpoly_seq) {
     char* fname;
     FILE* f;
-    char* mp = "bin/bench/b_minpoly_ntl.csv";
+    char* mpname;
 
     asprintf(&fname, "%s.csv", exec_name);
+    asprintf(&mpname, "%s_mp.csv", exec_name);
     f = fopen(fname, "w");
     fprintf(f, "jump,jumppoly\n");
 
@@ -27,11 +28,12 @@ void write_results(char* exec_name, size_t N, unsigned long long *jumps, double 
         fprintf(f, "%llu,%5.2e\n", jumps[i], results[i]);
     }
 
-    freopen(mp, "a", f);
+    freopen(mpname, "w", f);
     fprintf(f, "state_size,minpoly,minpoly_seq\n");
     fprintf(f, "%zu,%5.2e,%5.2e\n", f2lin_rng_generic_state_size(), minpoly, minpoly_seq);
 
     free(fname);
+    free(mpname);
     fclose(f);
 }
 

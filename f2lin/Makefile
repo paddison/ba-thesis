@@ -164,7 +164,10 @@ benchmark: CXX = mpicxx
 benchmark: CFLAGS += -I $(bench)
 benchmark: CXXFLAGS += -I $(bench)
 benchmark: opt_flag = -O3
-benchmark: b_jump_ahead_algorithms b_poly_decomp b_jump_ahead_init_jump_poly \
+benchmark: b_poly_decomp b_jump_ahead_init_jump_poly \
+		   $$(addprefix b_sliding_window_decomp_, $(rngs)) \
+		   $$(addprefix b_sw_, $(rngs)) \
+		   $$(addprefix b_horner_, $(rngs)) \
 		   $$(addprefix b_flint_, $(rngs)) \
 		   $$(addprefix b_ntl_, $(rngs)) \
 		   $$(addprefix b_iter_vs_jump_, $(rngs)) \
@@ -173,15 +176,26 @@ benchmark: b_jump_ahead_algorithms b_poly_decomp b_jump_ahead_init_jump_poly \
 		   | $(benchout) 
 	$(call move_prereqs, $|)
 
-
-b_jump_ahead_algorithms: $(rng64_obj) \
+b_sliding_window_decomp_%: $$($$(addsuffix $$*_obj, rng)) \
 						 $(build)/poly_rand.o \
-						 $(objects) \
-						 $(bench_obj) \
-						 $(build)/b_jump_ahead_algorithms.o 
+						 $(objects) $(bench_obj) \
+						 $(build)/b_sliding_window_decomp.o 
 	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
 
-b_poly_decomp: $(rng64_obj) \
+b_sw_%: $$($$(addsuffix $$*_obj, rng)) \
+						 $(build)/poly_rand.o \
+						 $(objects) $(bench_obj) \
+						 $(build)/b_sw.o 
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
+
+
+b_horner_%: $$($$(addsuffix $$*_obj, rng)) \
+						 $(build)/poly_rand.o \
+						 $(objects) $(bench_obj) \
+						 $(build)/b_horner.o 
+	$(CXX) $(CXXFLAGS) $(opt_flag) $^ -o $@ $(ntl_flags)
+
+b_poly_decomp: $(rngmt_obj) \
 			   $(objects) \
 			   $(build)/poly_rand.o \
 			   $(bench_obj) \

@@ -1,14 +1,3 @@
-/*
- * The purpose of this benchmark is to assess the performance of the three different 
- * algorithms which are used to evaluate the jump polynomial: horner, sliding window
- * and sliding window decomp.
- * 
- * Additionally, sliding window and sliding window decomp are also tested for different 
- * "q" values. Q is the degree of the decomposition polynomials used in those two algorithms.
- * Accepted values for q are in the range from 1 to 10.
- * 1 behaves exactly as just running horners algorithm.
- */
-
 #include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,26 +16,16 @@
 #include "poly_rand.h"
 
 #define BUF_MAX 100
-int grank;
+#define Q_START 2
+#define Q_END 10
 
-/* thank you Kingshuk :) */
-#define DEBUG_WAIT(a)                                                   \
-  if(a) {                                                               \
-    printf("Rank-%d: pid= %d\n", grank, getpid()); fflush(stdout);      \
-    int temp_inside= -1;                                                \
-    if(0== grank) {                                                     \
-      if(1!= scanf("%d", &temp_inside)) { temp_inside= 0; }             \
-    }                                                                   \
-    MPI_Bcast(&temp_inside, 1, MPI_INT, 0, MPI_COMM_WORLD);                      \
-  }
+static int grank;
 
 typedef struct data data;
 
 struct data {
     size_t deg;
-    double h;
     double sw[10];
-    double swd[10];
 };
 
 static
@@ -54,18 +33,20 @@ void write_results(char exec_name[static 1], size_t N, unsigned long long buf[N]
         char* fname;
         FILE* f;
 
+
         asprintf(&fname, "%s.csv", exec_name);
 
-        f = fopen(fname, "a");
-        fprintf(f, "deg,horner,");
-        for (size_t i = 1; i <= 10; ++i) fprintf(f, "sw%zu,", i);
-        for (size_t i = 1; i <= 10; ++i) fprintf(f, "swd%zu,", i);
+        printf("writing to: %s\n", fname);
+
+        f = fopen(fname, "w");
+        fprintf(f, "deg,");
+        for (size_t i = Q_START; i <= Q_END; ++i) fprintf(f, "%zu,", i);
         fprintf(f, "\n");
 
+
         for (size_t i = 0; i < N; ++i) {
-            fprintf(f, "%llu,%5.2e,", buf[i], results[i].h);
-            for (size_t j = 0; j < 10; ++j) fprintf(f, "%5.2e,", results[i].sw[j]);
-            for (size_t j = 0; j < 10; ++j) fprintf(f, "%5.2e,", results[i].swd[j]);
+            fprintf(f, "%llu,", buf[i]);
+            for (size_t j = Q_START; j <= Q_END; ++j) fprintf(f, "%5.2e,", results[i].sw[j - 1]);
             fprintf(f, "\n");
         }
         fclose(f);
@@ -81,20 +62,8 @@ double exec(unsigned long long poly_deg, F2LinConfig* cfg, size_t iterations, si
     F2LinJump* jp = f2lin_jump_ahead_init(poly_deg, cfg);
     GF2X* rand = f2lin_poly_rand_init(poly_deg);
 
-    switch (jp->algorithm) {
-        case HORNER:
-            GF2X_zero_destroy(jp->jp.horner);
-            jp->jp.horner = rand;
-            break;
-        case SLIDING_WINDOW:
-            GF2X_zero_destroy(jp->jp.sw.jp);
-            jp->jp.sw.jp = rand;
-            break;
-        default:
-            f2lin_poly_decomp_destroy(jp->jp.swd.pd);
-            jp->jp.swd.pd = f2lin_poly_decomp_init_from_gf2x(rand, jp->jp.swd.q);
-            GF2X_zero_destroy(rand);
-    }
+    GF2X_zero_destroy(jp->jp.sw.jp);
+    jp->jp.sw.jp = rand;
     
     for (size_t rep = 0; rep < repetitions; ++rep) {
         double start, end;
@@ -142,23 +111,18 @@ int main(int argc, char* argv[argc + 1]) {
 
     f2lin_bench_parse_argv(argc, &argv[3], buf);
 
-    F2LinConfig cfg = { .q = 5, .algorithm = HORNER };
+    F2LinConfig cfg;
     data results[n_deg];
 
     for (size_t i = 0; i < n_deg; ++i) {
-        results[i].h  = exec(buf[i], &cfg, iterations, repetitions);
-        if (grank == 0) printf("polydeg: %llu\thorner:%5.2e\t", buf[i], results[i].h);
 
-        for (size_t q = 1; q <= 10; ++q) {
+        if (grank == 0 )printf("deg: %llu\t", buf[i]);
+        for (size_t q = Q_START; q <= Q_END; ++q) {
             cfg.q = q;
             cfg.algorithm = SLIDING_WINDOW;
+            results[i].sw[q - 1] = exec(buf[i], &cfg, iterations, repetitions);
 
-            results[i].sw[q - 1]  = exec(buf[i], &cfg, iterations, repetitions);
-            if (grank == 0) printf("sw%zu: %5.2e\t", q, results[i].sw[q - 1]);
-
-            cfg.algorithm = SLIDING_WINDOW_DECOMP;
-            results[i].swd[q - 1] = exec(buf[i], &cfg, iterations, repetitions);
-            if (grank == 0) printf("swd%zu: %5.2e\t", q, results[i].swd[q - 1]);
+            if (grank == 0) printf("%zu: %5.2e\t", q, results[i].sw[q - 1]);
         }
         if (grank == 0) printf("\n");
     }

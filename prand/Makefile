@@ -31,6 +31,8 @@ bench_obj := $(patsubst %.c, $(build)/%.o, $(bench_src))
 test_src := prand48_tests.c
 test_obj := $(patsubst %.c, $(build)/%.o, $(test_src))
 
+benchmarks := b_iter_vs_jump b_strong_scaling
+
 # this tells make where all the source files, headers etc. are
 #-----------------------------------------
 
@@ -64,11 +66,11 @@ t_prand48: $(test_obj) | $(out)
 benchmark: CC = mpicc
 benchmark: CFLAGS += -I ../util
 benchmark: opt_flag = -O3
-benchmark: b_jump b_jump_vs_iter b_strong_scaling | $(benchout)
+benchmark: $(benchmarks) | $(benchout)
 	mv $^ $|
 
 
-b_jump b_jump_vs_iter b_strong_scaling: $(bench_obj) $(objects) $(build)/$$@.o
+$(benchmarks): $(bench_obj) $(objects) $(build)/$$@.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 

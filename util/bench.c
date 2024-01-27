@@ -35,7 +35,7 @@ double f2lin_bench_bmpi_eval(F2LinBMPI* bmpi) {
                result, bmpi->repetitions, MPI_DOUBLE, bmpi->root, MPI_COMM_WORLD);
 
     if (bmpi->rank == bmpi->root) {
-        double bavg = f2lin_tools_get_result(ndata, result);
+        double bavg = f2lin_tools_get_result(ndata, result, MED);
         free(result);
         return bavg;
     } else {

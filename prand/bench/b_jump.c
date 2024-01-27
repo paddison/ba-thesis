@@ -12,7 +12,7 @@ void write_results(char exec_name[static 1], size_t N, unsigned long long jumps[
     FILE* f;
 
     asprintf(&fname, "%s.csv", exec_name);
-    f = fopen(fname, "a");
+    f = fopen(fname, "w");
     fprintf(f, "jump,time\n");
 
     for (size_t i = 0; i < N; ++i) {

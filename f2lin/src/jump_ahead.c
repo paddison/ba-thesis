@@ -67,7 +67,7 @@ F2LinJump* f2lin_jump_ahead_init(size_t jump_size, F2LinConfig* cfg) {
     // load the minimal polynomial from the header
     GF2X* min_poly = load_min_poly();
     F2LinJump* jump_params = calloc(1, sizeof(F2LinJump));
-    F2LinConfig def = { .q = Q_DEFAULT, .algorithm = ALGORITHM_DEFAULT };
+    F2LinConfig def = { .q = Q_DEFAULT, .algorithm = SLIDING_WINDOW_DECOMP };
     GF2X* jump_poly = init_jump_poly(min_poly, jump_size);
     union F2LinJumpPoly jp;
 

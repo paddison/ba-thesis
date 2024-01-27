@@ -67,19 +67,15 @@ int main(int argc, char* argv[argc + 1]) {
         char* fname;
         FILE* f;
         double avg = 
-            f2lin_tools_get_result(repetitions * gsize, total) / (double) iterations;
+            f2lin_tools_get_result(repetitions * gsize, total, MED) / (double) iterations;
 
         asprintf(&fname, "%s_%zu.csv", argv[0], psize);
 
-        if (access(fname, F_OK) == -1) {
-            f = fopen(fname, "a");
-            fprintf(f, "nprocs,time\n");
-        } else {
-            f = fopen(fname, "a");
-        }
+        f = fopen(fname, "a");
 
         fprintf(f, "%d,%5.2e\n", gsize, avg);
-        printf("nprocs: %d\ttime: %5.2es\n", gsize, avg);
+        printf("%d,%5.2e\n", gsize, avg);
+
 
         fclose(f);
         free(fname);
